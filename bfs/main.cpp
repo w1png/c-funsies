@@ -19,7 +19,7 @@ using namespace std;
 class Maze {
 public:
   vector<vector<int>> maze;
-  Maze(pair<int, int> end = {-1, -1}) {
+  Maze() {
     this->maze =
         vector<vector<int>>(MATRIX_SIZE_Y, vector<int>(MATRIX_SIZE_X, 0));
 
@@ -28,11 +28,7 @@ public:
       this->maze[curr.first][curr.second] = WALL_INT;
     }
 
-    if (end.first == -1 && end.second == -1) {
-      this->maze[rand() % MATRIX_SIZE_Y][rand() % MATRIX_SIZE_X] = END_INT;
-    } else {
-      this->maze[end.first][end.second] = END_INT;
-    }
+    this->maze[rand() % MATRIX_SIZE_Y][rand() % MATRIX_SIZE_X] = END_INT;
   }
 
 #define WALL "█"
@@ -128,17 +124,15 @@ int main(void) {
   srand(time(NULL));
 
   Maze maze = Maze();
+  vector<vector<int>> initialMaze = maze.maze;
 
   auto path = solve(maze, {5, 5});
 
-  Maze solvedMaze = Maze({path.back().first, path.back().second});
+  maze.maze = initialMaze;
   for (auto &p : path) {
-    if (p.first == path.back().first && p.second == path.back().second) {
-      continue;
-    }
-    solvedMaze.maze[p.first][p.second] = CHECKED_INT;
+    maze.maze[p.first][p.second] = CHECKED_INT;
   }
-  solvedMaze.print();
+  maze.print();
   printf("End found at {%d,%d}", path.back().first, path.back().second);
 
   return 0;
