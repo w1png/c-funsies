@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <deque>
+#include <map>
 #include <unistd.h>
 #include <vector>
 
@@ -7,24 +8,31 @@ using namespace std;
 
 #define WALL_INT 1
 #define EMPTY_INT 0
-#define PLAYER_INT 2
 #define END_INT 3
 #define CHECKED_INT 4
 
-#define TOTAL_OBSTACLES 30
+#define TOTAL_OBSTACLES 100
+
+#define MATRIX_SIZE_Y 10
+#define MATRIX_SIZE_X 50
 
 class Maze {
 public:
   vector<vector<int>> maze;
-  Maze() {
-    this->maze = vector<vector<int>>(10, vector<int>(10, 0));
+  Maze(pair<int, int> end = {-1, -1}) {
+    this->maze =
+        vector<vector<int>>(MATRIX_SIZE_Y, vector<int>(MATRIX_SIZE_X, 0));
 
     for (int i = 0; i < TOTAL_OBSTACLES; i++) {
-      pair<int, int> curr = {rand() % 10, rand() % 10};
+      pair<int, int> curr = {rand() % MATRIX_SIZE_Y, rand() % MATRIX_SIZE_X};
       this->maze[curr.first][curr.second] = WALL_INT;
     }
 
-    this->maze[rand() % 9][rand() % 9] = END_INT;
+    if (end.first == -1 && end.second == -1) {
+      this->maze[rand() % MATRIX_SIZE_Y][rand() % MATRIX_SIZE_X] = END_INT;
+    } else {
+      this->maze[end.first][end.second] = END_INT;
+    }
   }
 
 #define WALL "█"
@@ -33,14 +41,17 @@ public:
 #define PLAYER "☺"
 #define CHECKED "☑"
 
-  void print() {
+  void print(pair<int, int> playerPosition = {-1, -1}) {
     printf("\033[2J");
-    for (int y = 0; y < 10; y++) {
-      for (int x = 0; x < 10; x++) {
+    for (int y = 0; y < MATRIX_SIZE_Y; y++) {
+      for (int x = 0; x < MATRIX_SIZE_X; x++) {
+        if (playerPosition.first == y && playerPosition.second == x) {
+          printf("%s", PLAYER);
+          continue;
+        }
+
         if (this->maze[y][x] == WALL_INT) {
           printf("%s", WALL);
-        } else if (this->maze[y][x] == PLAYER_INT) {
-          printf("%s", PLAYER);
         } else if (this->maze[y][x] == END_INT) {
           printf("%s", END);
         } else if (this->maze[y][x] == CHECKED_INT) {
@@ -52,51 +63,58 @@ public:
       puts("");
     }
 
-    usleep(10000);
+    usleep(5000);
   }
 };
 
-pair<int, int> solve(Maze &maze, pair<int, int> curr) {
-  if (maze.maze[curr.first][curr.second] == END_INT) {
-    return curr;
-  }
-
+vector<pair<int, int>> solve(Maze &maze, pair<int, int> curr) {
+  map<pair<int, int>, pair<int, int>> parents;
+  parents[curr] = make_pair(-1, -1);
   deque<pair<int, int>> queue;
+  maze.maze[curr.first][curr.second] = CHECKED_INT;
   queue.push_back(curr);
 
   while (!queue.empty()) {
     pair<int, int> curr = queue.front();
-    maze.maze[curr.first][curr.second] = CHECKED_INT;
-    maze.print();
+    maze.print(curr);
+    if (maze.maze[curr.first][curr.second] == END_INT) {
+      vector<pair<int, int>> path;
+      pair<int, int> at = parents[curr];
+      while (at != make_pair(-1, -1)) {
+        path.push_back(at);
+        at = parents[at];
+      }
+      reverse(path.begin(), path.end());
 
-    pair<int, int> neighbours[8] = {
-        // {curr.first - 1, curr.second - 1},
-        {curr.first - 1, curr.second},
-        // {curr.first - 1, curr.second + 1},
-        {curr.first, curr.second - 1},
-        {curr.first, curr.second + 1},
-        // {curr.first + 1, curr.second - 1},
-        {curr.first + 1, curr.second},
-        // {curr.first + 1, curr.second + 1},
+      return path;
+    }
+
+    pair<int, int> directions[4] = {
+        {0, -1},
+        {0, 1},
+        {-1, 0},
+        {1, 0},
     };
 
-    for (int i = 0; i < 8; i++) {
-      pair<int, int> neighbour = neighbours[i];
-      if (neighbour.first < 0 || neighbour.first > 9 || neighbour.second < 0 ||
-          neighbour.second > 9) {
+    for (auto &direction : directions) {
+      pair<int, int> neighbour = {curr.first + direction.first,
+                                  curr.second + direction.second};
+
+      if (neighbour.first < 0 || neighbour.first > MATRIX_SIZE_Y - 1 ||
+          neighbour.second < 0 || neighbour.second > MATRIX_SIZE_X - 1) {
         continue;
       }
 
-      if (maze.maze[neighbour.first][neighbour.second] == WALL_INT ||
-          maze.maze[neighbour.first][neighbour.second] == CHECKED_INT) {
+      int cell = maze.maze[neighbour.first][neighbour.second];
+      if (cell == WALL_INT || cell == CHECKED_INT) {
         continue;
       }
 
-      if (maze.maze[neighbour.first][neighbour.second] == END_INT) {
-        return neighbour;
+      if (cell != END_INT) {
+        maze.maze[neighbour.first][neighbour.second] = CHECKED_INT;
       }
-
       queue.push_back(neighbour);
+      parents[neighbour] = curr;
     }
 
     queue.pop_front();
@@ -111,8 +129,17 @@ int main(void) {
 
   Maze maze = Maze();
 
-  pair<int, int> end = solve(maze, {1, 1});
-  printf("End found at {%d,%d}", end.first, end.second);
+  auto path = solve(maze, {5, 5});
+
+  Maze solvedMaze = Maze({path.back().first, path.back().second});
+  for (auto &p : path) {
+    if (p.first == path.back().first && p.second == path.back().second) {
+      continue;
+    }
+    solvedMaze.maze[p.first][p.second] = CHECKED_INT;
+  }
+  solvedMaze.print();
+  printf("End found at {%d,%d}", path.back().first, path.back().second);
 
   return 0;
 }
