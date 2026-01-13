@@ -1,0 +1,18 @@
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 600
+
+#define PLAYER_SPEED 50.0f
+#define RUN_MULTIPLIER 1.5f
+#define TARGET_FPS 120
+#define POINT_SIZE 16
+#define TILE_SIZE (Vector2){ POINT_SIZE, POINT_SIZE }
+#define MAX_WORLD_SIZE 100
+#define TIME_LIMIT_PER_BOMB .7f
+#define PLAYER_SCALE 0.8f
+#define MAX_INVENTORY_OBJECTS 5
+#define BREAK_DISTANCE 3.0f
+#define MAX_OBJECTS 32
+#define MAX_TEXTURES 32
+
+#define HAS_TAG(obj, tag)       ((obj)->tags & (tag))
+#define HAS_ALL_TAGS(obj, mask) (((obj)->tags & (mask)) == (mask))
