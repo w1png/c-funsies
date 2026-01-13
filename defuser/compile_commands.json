@@ -1,0 +1,20 @@
+[
+  {
+    "file": "game.c",
+    "arguments": [
+      "cc",
+      "game.c",
+      "-I/opt/homebrew/Cellar/raylib/5.5/include",
+      "-framework",
+      "IOKit",
+      "-framework",
+      "Cocoa",
+      "-framework",
+      "OpenGL",
+      "-o",
+      "game"
+    ],
+    "directory": "/Users/w1png/dev/c/game",
+    "output": "game"
+  }
+]
