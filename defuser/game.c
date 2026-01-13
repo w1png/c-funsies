@@ -6,19 +6,12 @@
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 
-#define PLAYER_SPEED 250.0f
+#define PLAYER_SPEED 150.0f
 #define TARGET_FPS 120
-#define POINT_SIZE 32
+#define POINT_SIZE 16
 #define TILE_SIZE (Vector2){ POINT_SIZE, POINT_SIZE }
 #define WORLD_SIZE 20
 #define TIME_LIMIT_PER_BOMB .7f
-
-#define COLOR_BOUNDS (Color){ 0, 0, 0, 255 }
-#define COLOR_TRAP (Color){ 255, 0, 0, 255 }
-#define COLOR_DEFUSED (Color){ 255, 255, 255, 255 }
-#define COLOR_BOMB (Color){ 0, 0, 255, 255 }
-#define COLOR_BOMB_DEFUSED (Color){ 0, 0, 255, 120 }
-#define COLOR_BOMB_TRAP (Color){ 0, 0, 255, 255 }
 
 typedef enum {
   BOMB,
@@ -29,7 +22,6 @@ typedef enum {
 
 typedef struct {
   Rectangle bounds;
-  Color color;
   TileType type;
   bool defused;
 } Tile;
@@ -51,22 +43,23 @@ void initGame() {
 
       // if end of world
       if (i == 0 || i == WORLD_SIZE-1 || j == 0 || j == WORLD_SIZE-1) {
-        tile->color = (Color){ 0, 0, 0, 255 };
         tile->type = WALL;
       } else {
         tile->type = EMPTY;
-        // 5% chance to be a bomb
-        if (GetRandomValue(0, 100) < 5) {
-          tile->color = COLOR_BOMB;
-          tile->type = BOMB;
-          totalBombs++;
+
+        int rand = GetRandomValue(0, 100);
         // 2% chance to be a trap
-        } else if (GetRandomValue(0, 100) < 2) {
-          tile->color = COLOR_TRAP;
+        if ( rand < 2 ) {
           tile->type = TRAP;
-        } else {
-          tile->color = (Color){ 255, 255, 255, 255 };
-        }
+        // 5% chance to be a bomb
+        } else if (rand < 5) {
+          tile->type = BOMB;
+          tile->defused = false;
+          totalBombs++;
+        // 5% chance to be a wall
+        } else if (rand > 5 && rand < 10) {
+          tile->type = WALL;
+        } 
       }
     } 
   }
@@ -74,14 +67,17 @@ void initGame() {
   timeleftSeconds = TIME_LIMIT_PER_BOMB * totalBombs;
 }
 
-#define PLAUER_SCALE 0.8f
+#define PLAYER_SCALE 0.8f
+
+float worldCenterX = (WORLD_SIZE * TILE_SIZE.x) / 2.0f - (POINT_SIZE * PLAYER_SCALE / 2.0f);
+float worldCenterY = (WORLD_SIZE * TILE_SIZE.y) / 2.0f - (POINT_SIZE * PLAYER_SCALE / 2.0f);
 
 Rectangle GetDefaultPlayerBounds() {
-  return (Rectangle){ 
-    (SCREEN_WIDTH/2.0f - POINT_SIZE/2.0f) * PLAUER_SCALE,
-    (SCREEN_HEIGHT/2.0f - POINT_SIZE/2.0f) * PLAUER_SCALE,
-    POINT_SIZE * PLAUER_SCALE,
-    POINT_SIZE * PLAUER_SCALE
+  return (Rectangle){
+      worldCenterX,
+      worldCenterY,
+      POINT_SIZE * PLAYER_SCALE,
+      POINT_SIZE * PLAYER_SCALE
   };
 }
 
@@ -103,11 +99,24 @@ int main(void)
     Sound defuse = LoadSound("./assets/defuse.wav");
     Sound win = LoadSound("./assets/win.wav");
     Sound lose = LoadSound("./assets/lose.wav");
+   
+    Texture2D trap = LoadTexture("./assets/trap.png");
+    Texture2D empty_1 = LoadTexture("./assets/empty_1.png");
+    Texture2D empty_2 = LoadTexture("./assets/empty_2.png");
+    Texture2D empty_3 = LoadTexture("./assets/empty_3.png");
 
+    Texture2D bomb = LoadTexture("./assets/bomb.png");
+    Texture2D bomb_defused = LoadTexture("./assets/bomb_defused.png");
+
+    Texture2D skull = LoadTexture("./assets/skull_1.png");
+
+    Texture2D wall_top, wall_right, wall_left, wall_bottom;
+    wall_top = wall_right = wall_left = wall_bottom = LoadTexture("./assets/wall_vertical.png");
     Rectangle playerBounds = GetDefaultPlayerBounds();
 
     Camera2D camera = { 0 };
-    camera.zoom = 1.0f;
+    camera.zoom = 2.0f;
+    int dir = 1;
 
     SetTargetFPS(TARGET_FPS);
     while (!WindowShouldClose()) {
@@ -122,9 +131,11 @@ int main(void)
         Rectangle playerPositionBefore = playerBounds;
         if (IsKeyDown(KEY_A)) {
           playerBounds.x -= GetFrameTime() * PLAYER_SPEED;
+          dir = -1;
         }
         if (IsKeyDown(KEY_D)) {
           playerBounds.x += GetFrameTime() * PLAYER_SPEED;
+          dir = 1;
         }
         if (IsKeyDown(KEY_S)) {
           playerBounds.y += GetFrameTime() * PLAYER_SPEED;
@@ -148,7 +159,6 @@ int main(void)
                 continue;
               }
               if (tile->type == BOMB && !tile->defused) {
-                tile->color = COLOR_BOMB_DEFUSED;
                 tile->defused = true;
                 bombsDefused++;
                 PlaySound(defuse);
@@ -184,9 +194,34 @@ int main(void)
           case PLAYING: {
             BeginMode2D(camera);
               for (int i = 0; i < WORLD_SIZE*WORLD_SIZE; i++) {
-                DrawRectangleRec(world[i].bounds, world[i].color);
+                Tile tile = world[i];
+                int t = i % 3;
+                Texture2D texture = empty_1;
+                if (t == 1) texture = empty_2;
+                if (t == 2) texture = empty_3;
+                DrawTexture(texture, tile.bounds.x, tile.bounds.y, WHITE);
+                if (tile.type == WALL) {
+                  if (tile.bounds.x < SCREEN_WIDTH/2.0f) {
+                    DrawTexture(wall_left, tile.bounds.x, tile.bounds.y, WHITE);
+                  } else {
+                    DrawTexture(wall_right, tile.bounds.x, tile.bounds.y, WHITE);
+                  }
+                  if (tile.bounds.y < SCREEN_HEIGHT/2.0f) {
+                    DrawTexture(wall_top, tile.bounds.x, tile.bounds.y, WHITE);
+                  }
+                } else if (tile.type == TRAP) {
+                  DrawTexture(trap, tile.bounds.x, tile.bounds.y, WHITE);
+                } else if (tile.type == BOMB) {
+                  Texture2D texture = bomb;
+                  if (tile.defused == true) {
+                    texture = bomb_defused;
+                  }
+                  DrawTexture(texture, tile.bounds.x, tile.bounds.y, WHITE);
+                }
               }
-              DrawRectangleRec(playerBounds, GREEN);
+              Rectangle source = { 0.0f, 0.0f, (float)skull.width * dir, (float)skull.height };
+
+              DrawTextureRec(skull, source, (Vector2){ playerBounds.x, playerBounds.y }, WHITE);
             EndMode2D();
 
             DrawText(TextFormat("Traps found: %d/%d", bombsDefused, totalBombs), 10, 10, 10, DARKGRAY);
