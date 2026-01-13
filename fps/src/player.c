@@ -1,12 +1,13 @@
 #include "player.h"
 #include "objects.h"
+#include "raylib.h"
 #include "texture.h"
 #include <stdlib.h>
 
 void InitPlayer(Player *player) {
   player->bounds = (Rectangle){
-    0.0f,
-    0.0f,
+    GetRandomValue(0, MAX_WORLD_SIZE),
+    GetRandomValue(0, MAX_WORLD_SIZE),
     POINT_SIZE * PLAYER_SCALE,
     POINT_SIZE * PLAYER_SCALE
   };
@@ -51,8 +52,13 @@ void HandleUpdateInventory(Player *player) {
 }
 
 void DrawPlayer(Player *player, Vector2 deltas) {
-    Rectangle source = { 0.0f, 0.0f, (float)textures.player.width * (deltas.x > 0 ? 1 : -1), (float)textures.player.height };
-    DrawTextureRec(textures.player, source, (Vector2){ player->bounds.x, player->bounds.y }, WHITE);
+  DrawTexturePro(
+    textures.player, 
+    (Rectangle){0, 0, (float)textures.player.width, (float)textures.player.height}, 
+    (Rectangle){player->bounds.x, player->bounds.y, (float)POINT_SIZE, (float)POINT_SIZE},
+    (Vector2){0,0}, 
+    0.0f, WHITE
+  );
 }
 
 void DrawInventory(Player *player) {

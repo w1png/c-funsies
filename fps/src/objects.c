@@ -53,7 +53,10 @@ void RegisterObjects() {
   STONE->onBreak = OnBreakGeneric;
 
   GRASS = RegisterObject("grass", &textures.grass);
-  GRASS->tags = TAG_EMPTY;
+  GRASS->tags = TAG_EMPTY | TAG_BACKGROUND;
+
+  WATER = RegisterObject("water", &textures.water);
+  WATER->tags = TAG_BLOCKING | TAG_FISHING_SPOT | TAG_BACKGROUND;
 
   TraceLog(LOG_INFO, "Objects registered");
 }

@@ -1,20 +1,16 @@
 [
   {
-    "file": "game.c",
+    "file": "src/game.c",
     "arguments": [
       "cc",
-      "game.c",
+      "-I./src",
       "-I/opt/homebrew/Cellar/raylib/5.5/include",
-      "-framework",
-      "IOKit",
-      "-framework",
-      "Cocoa",
-      "-framework",
-      "OpenGL",
+      "-c",
+      "src/game.c",
       "-o",
-      "game"
+      "obj/game.o"
     ],
-    "directory": "/Users/w1png/dev/c/game",
-    "output": "game"
+    "directory": "/Users/w1png/dev/c/fps",
+    "output": "obj/game.o"
   }
 ]

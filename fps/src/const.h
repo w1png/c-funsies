@@ -1,11 +1,12 @@
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 
-#define PLAYER_SPEED 50.0f
 #define RUN_MULTIPLIER 1.5f
 #define TARGET_FPS 120
-#define POINT_SIZE 16
-#define TILE_SIZE (Vector2){ POINT_SIZE, POINT_SIZE }
+#define POINT_SIZE 48
+#define PLAYER_SPEED (POINT_SIZE * 2)
+#define MIN_ZOOM ((float)POINT_SIZE / 12)
+#define MAX_ZOOM 0.5f
 #define MAX_WORLD_SIZE 100
 #define TIME_LIMIT_PER_BOMB .7f
 #define PLAYER_SCALE 0.8f
