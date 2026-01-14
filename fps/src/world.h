@@ -12,6 +12,6 @@ typedef struct {
   float breakTimeSecondsPassed;
 } Tile;
 
-void GenerateWorld(Tile *world);
+void GenerateWorld(Tile *world, Rectangle playerBounds);
 
 #endif

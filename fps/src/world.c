@@ -54,7 +54,7 @@ done:
     TraceLog(LOG_INFO, "Pond center (%d,%d) → %d / %d water tiles", cx, cy, placed, target);
 }
 
-void GenerateWorld(Tile *world) {
+void GenerateWorld(Tile *world, Rectangle playerBounds) {
   TraceLog(LOG_INFO, "Generating world");
   for (int i = 0; i < MAX_WORLD_SIZE; i++) {
     TraceLog(LOG_INFO, "Generating row %i", i);
@@ -63,16 +63,20 @@ void GenerateWorld(Tile *world) {
       tile->bounds = (Rectangle){ i*POINT_SIZE, j*POINT_SIZE, POINT_SIZE, POINT_SIZE };
       tile->object = GRASS;
 
-      if (GetRandomValue(0, 100) < 5) {
-        tile->object = TREE;
-      } else if (GetRandomValue(0, 100) < 5) {
-        tile->object = STONE;
+      if (!CheckCollisionRecs(playerBounds, tile->bounds)) {
+        if (GetRandomValue(0, 100) < 5) {
+          tile->object = TREE;
+        } else if (GetRandomValue(0, 100) < 5) {
+          tile->object = STONE;
+        }
       }
+
     }
   }
 
   for (int i = 0; i < GetRandomValue(1, MAX_PONDS); i++) {
     GeneratePond(world);
   }
+
   TraceLog(LOG_INFO, "World generated");
 }

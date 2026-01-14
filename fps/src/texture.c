@@ -28,7 +28,7 @@ void LoadTextures() {
 
   textures.player = LoadTextureWithFallback("./assets/textures/player.png");
   textures.wall = LoadTextureWithFallback("./assets/textures/wall.png");
-  textures.tree = LoadTextureWithFallback("./assets/textures/tree.png");
+  textures.tree = LoadTextureWithFallback("./assets/textures/pine_tree.png");
   textures.water = LoadTextureWithFallback("./assets/textures/water.png");
   textures.grass = LoadTextureWithFallback("./assets/textures/grass.png");
   textures.stone = LoadTextureWithFallback("./assets/textures/stone.png");

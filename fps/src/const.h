@@ -1,10 +1,10 @@
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 
-#define RUN_MULTIPLIER 1.5f
+#define RUN_MULTIPLIER 2.0f
 #define TARGET_FPS 120
 #define POINT_SIZE 48
-#define PLAYER_SPEED (POINT_SIZE * 2)
+#define PLAYER_SPEED (POINT_SIZE * 3)
 #define MIN_ZOOM ((float)POINT_SIZE / 12)
 #define MAX_ZOOM 0.5f
 #define MAX_WORLD_SIZE 100
@@ -14,6 +14,7 @@
 #define BREAK_DISTANCE 3.0f
 #define MAX_OBJECTS 32
 #define MAX_TEXTURES 32
+#define MAX_UI_SCREENS 32
 
 #define HAS_TAG(obj, tag)       ((obj)->tags & (tag))
 #define HAS_ALL_TAGS(obj, mask) (((obj)->tags & (mask)) == (mask))

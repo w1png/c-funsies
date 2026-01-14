@@ -1,3 +1,4 @@
 .cache
 bin
 obj
+.DS_Store

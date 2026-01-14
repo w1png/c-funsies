@@ -10,10 +10,16 @@ typedef struct {
   int amount;
 } InventoryObject;
 
+typedef enum {
+  PS_NORMAL,
+  PS_FISHING,
+} PlayerState;
+
 typedef struct {
   Rectangle bounds;
   InventoryObject* inventory[MAX_INVENTORY_OBJECTS];
   int selectedInventoryObjectIndex;
+  PlayerState state;
 } Player;
 
 void InitPlayer(Player *player);
@@ -22,6 +28,5 @@ void AddToPlayerInventory(Object *item, int amount, Player *player);
 void HandleUpdateInventory(Player *player);
 
 void DrawPlayer(Player *player, Vector2 deltas);
-void DrawInventory(Player *player);
 
 #endif
