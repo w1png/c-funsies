@@ -5,20 +5,21 @@
 #include "world.h"
 #include <stdbool.h>
 
-#define BUTTON_HEIGHT 48
-#define PADDING 12
-#define GAP 8
-
 typedef struct {
+  int id;
   const char* name;
   void (*handle)(void* screen);
   bool isOpen;
+  bool isBlocking;
 
   void* data;
 } UIScreen;
 
 void RegisterAllUIScreens();
 void HandleAllUIUpdates();
+void SetScreenOpen(UIScreen* us, bool isOpen);
+
+UIScreen* GetUILock();
 
 extern UIScreen* pauseMenu;
 typedef struct {
@@ -31,6 +32,8 @@ typedef struct {
 } PlayerInventoryData;
 
 extern UIScreen* debugMenu;
+
+extern UIScreen* debugInfo;
 typedef struct {
   Tile* world;
   Player* player;
@@ -42,6 +45,7 @@ typedef struct {
     bool showHoveredTileType;
     bool showCollisions;
     bool showBreakTime;
+    bool showUILock;
   } features;
 } DebugMenuData;
 

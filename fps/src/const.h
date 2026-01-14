@@ -11,10 +11,14 @@
 #define TIME_LIMIT_PER_BOMB .7f
 #define PLAYER_SCALE 0.8f
 #define MAX_INVENTORY_OBJECTS 5
-#define BREAK_DISTANCE 3.0f
+#define INTERACT_DISTANCE 2.0f
 #define MAX_OBJECTS 32
 #define MAX_TEXTURES 32
-#define MAX_UI_SCREENS 32
+#define MAX_UI_SCREENS 16
+
+#define BUTTON_HEIGHT 48
+#define PADDING 12
+#define GAP 8
 
 #define HAS_TAG(obj, tag)       ((obj)->tags & (tag))
 #define HAS_ALL_TAGS(obj, mask) (((obj)->tags & (mask)) == (mask))

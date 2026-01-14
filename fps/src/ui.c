@@ -1,23 +1,57 @@
 #include "ui.h"
 #include "objects.h"
 #include "raylib.h"
+#include <stdatomic.h>
 #define RAYGUI_IMPLEMENTATION
 #include "lib/raygui.h"
 #include "const.h"
-#include <stdlib.h>
 
 UIScreen* pauseMenu;
 UIScreen* playerInventoryMenu;
 UIScreen* debugMenu;
+UIScreen* debugInfo;
 
 UIScreen ui_screens[MAX_UI_SCREENS];
 int ui_screen_count = 0;
 
+UIScreen* UI_LOCK = NULL;
+bool CanSetUILock(int callerId) {
+  return UI_LOCK == NULL || UI_LOCK->id == callerId;
+}
+int SetUILock(UIScreen* us, int callerId) {
+  if (!CanSetUILock(callerId)) {
+    return -1;
+  }
+
+  TraceLog(LOG_INFO, "Setting UI lock to %s", us != NULL ? us->name : "NULL");
+  UI_LOCK = us;
+
+  return 0;
+}
+UIScreen* GetUILock() {
+  return UI_LOCK;
+}
+
+void SetScreenOpen(UIScreen* us, bool isOpen) {
+  if (us->isBlocking) {
+    if (SetUILock(isOpen ? us : NULL, us->id) != 0) {
+      TraceLog(LOG_ERROR, "Failed to %s screen %s: Failed to set ui lock", isOpen ? "open" : "close", us->name);
+      return;
+    }
+  }
+  us->isOpen = isOpen;
+} 
+
 
 UIScreen* RegisterUIScreen(const char* name) {
+  TraceLog(LOG_INFO, "Registering UI screen: %s", name);
   UIScreen* us = &ui_screens[ui_screen_count++];
+  us->id = ui_screen_count - 1;
   us->name = name;
   us->isOpen = false;
+  us->isBlocking = false;
+
+  TraceLog(LOG_INFO, "Registered UI screen: %s", name);
   return us;
 } 
 
@@ -25,6 +59,9 @@ void HandleAllUIUpdates() {
   UIScreen* us;
   for (int i = 0; i < ui_screen_count; i++) {
     us = &ui_screens[i];
+    if (us->isBlocking && !CanSetUILock(us->id)) {
+      continue;
+    };
     us->handle(us);
   }
 }
@@ -48,11 +85,11 @@ void HandlePauseMenu(void* screen) {
 
   DrawRectangle(position.x, position.y, width, height, WHITE);
   if (GuiButton((Rectangle){position.x + PADDING, position.y + PADDING, width - PADDING*2, BUTTON_HEIGHT}, "Resume")) {
-    us->isOpen = false;
+    SetScreenOpen(us, false);
   }
 
   if (GuiButton((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*1 + GAP*1, width - PADDING*2, BUTTON_HEIGHT}, "Quit")) {
-    us->isOpen = false;
+    SetScreenOpen(us, false);
     *data->isExiting = true;
   }
 }
@@ -91,23 +128,45 @@ void HandleDebugMenu(void* screen) {
   UIScreen* us = screen;
   DebugMenuData* data = us->data;
 
-  int totalButtons = 5;
+  int totalButtons = 6;
   float width = 400.0f;
   float height = PADDING*2+BUTTON_HEIGHT*totalButtons+GAP*(totalButtons-1);
   Vector2 position = (Vector2){GetScreenWidth()/2.0f - width/2.0f, GetScreenHeight()/2.0f - height/2.0f};
+
+  if (us->isOpen) {
+    DrawBackground();
+    DrawRectangle(position.x, position.y, width, height, WHITE);
+    GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s FPS", data->features.showFPS ? "Hide" : "Show"), &data->features.showFPS);
+    GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT + GAP, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s hovered tile type", data->features.showHoveredTileType ? "Hide" : "Show"), &data->features.showHoveredTileType);
+    GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*2 + GAP*2, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s collisions", data->features.showCollisions ? "Hide" : "Show"), &data->features.showCollisions);
+    GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*3 + GAP*3, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s break time", data->features.showBreakTime ? "Hide" : "Show"), &data->features.showBreakTime);
+    GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*4 + GAP*4, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s ui lock", data->features.showUILock ? "Hide" : "Show"), &data->features.showUILock);
+    if (GuiButton((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*(totalButtons-1) + GAP*(totalButtons-1), width - PADDING*2, BUTTON_HEIGHT}, "Close")) {
+      SetScreenOpen(us, false);
+    }
+  }
+}
+
+void HandleDebugInfo(void* screen) {
+  UIScreen* us = screen;
+  DebugMenuData* data = us->data;
+  int fontSize = 16;
 
   if (data->features.showFPS) {
       const char *fpsText = 0;
       if (TARGET_FPS <= 0) fpsText = TextFormat("FPS: unlimited (%i)", GetFPS());
       else fpsText = TextFormat("FPS: %i (target: %i)", GetFPS(), TARGET_FPS);
-      DrawText(fpsText, PADDING, GetScreenHeight()-PADDING, 16, PINK);
-      DrawText(TextFormat("Frame time: %02.02f ms", GetFrameTime()), PADDING, GetScreenHeight()-PADDING-GAP, 16, PINK);
+      DrawText(fpsText, PADDING, GetScreenHeight()-PADDING-fontSize, fontSize, PINK);
   }
 
   if (data->features.showHoveredTileType) {
     if (*data->hoveredTile != NULL) {
-      DrawText(TextFormat("Hovered tile type: %s", (*data->hoveredTile)->object->name), PADDING, GetScreenHeight()-PADDING-GAP*2-16, 16, PINK);
+      DrawText(TextFormat("Hovered tile type: %s", (*data->hoveredTile)->object->name), PADDING, GetScreenHeight()-PADDING-GAP*2-fontSize, fontSize, PINK);
     }
+  }
+
+  if (data->features.showUILock) {
+    DrawText(TextFormat("UI Lock: %s", UI_LOCK != NULL ? UI_LOCK->name : "None"), PADDING, GetScreenHeight()-PADDING-GAP*3-fontSize, fontSize, PINK);
   }
 
   for (int i = 0; i < MAX_WORLD_SIZE*MAX_WORLD_SIZE; i++) {
@@ -154,19 +213,6 @@ void HandleDebugMenu(void* screen) {
       }
     }
   }
-
-  if (us->isOpen) {
-    DrawBackground();
-    DrawRectangle(position.x, position.y, width, height, WHITE);
-    GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s FPS", data->features.showFPS ? "Hide" : "Show"), &data->features.showFPS);
-    GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT + GAP, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s hovered tile type", data->features.showHoveredTileType ? "Hide" : "Show"), &data->features.showHoveredTileType);
-    GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*2 + GAP*2, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s collisions", data->features.showCollisions ? "Hide" : "Show"), &data->features.showCollisions);
-    GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*3 + GAP*3, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s break time", data->features.showBreakTime ? "Hide" : "Show"), &data->features.showBreakTime);
-    if (GuiButton((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*4 + GAP*4, width - PADDING*2, BUTTON_HEIGHT}, "Close")) {
-      us->isOpen = false;
-    }
-  }
-
 }
 
 void RegisterAllUIScreens() {
@@ -175,13 +221,20 @@ void RegisterAllUIScreens() {
   PlayerInventoryData playerInventoryData = { .player = NULL };
   playerInventoryMenu->data = &playerInventoryData;
 
+  DebugMenuData debugMenuData = { .world = NULL, .player = NULL, .hoveredTile = NULL, .camera = NULL };
+  debugInfo = RegisterUIScreen("Debug Info");
+  debugInfo->handle = HandleDebugInfo;
+  debugInfo->data = &debugMenuData;
+  debugInfo->isOpen = true;
+
+  debugMenu = RegisterUIScreen("Debug");
+  debugMenu->handle = HandleDebugMenu;
+  debugMenu->isBlocking = true;
+  debugMenu->data = &debugMenuData;
+
   pauseMenu = RegisterUIScreen("Pause Menu");
   pauseMenu->handle = HandlePauseMenu;
   PauseMenuData pauseMenuData = { .isExiting = NULL };
   pauseMenu->data = &pauseMenuData;
-
-  debugMenu = RegisterUIScreen("Debug");
-  debugMenu->handle = HandleDebugMenu;
-  DebugMenuData debugMenuData = { .world = NULL, .player = NULL };
-  debugMenu->data = &debugMenuData;
+  pauseMenu->isBlocking = true;
 }
