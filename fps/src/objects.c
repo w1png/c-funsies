@@ -35,7 +35,7 @@ void* OnBreakGeneric(void* object, void *data, void *player) {
   return 0;
 }
 
-void RegisterObjects() {
+void RegisterAllObjects() {
   TraceLog(LOG_INFO, "Registering objects");
   TREE = RegisterObject("tree", &textures.tree);
   TREE->tags = TAG_BLOCKING | TAG_BREAKABLE;
@@ -57,6 +57,11 @@ void RegisterObjects() {
 
   WATER = RegisterObject("water", &textures.water);
   WATER->tags = TAG_BLOCKING | TAG_FISHING_SPOT | TAG_BACKGROUND;
+
+  FENCE = RegisterObject("fence", &textures.placeholder);
+  FENCE->tags = TAG_BLOCKING | TAG_BREAKABLE | TAG_PLACEABLE;
+  FENCE->breakTimeSeconds = 0.5;
+  FENCE->onBreak = OnBreakGeneric;
 
   TraceLog(LOG_INFO, "Objects registered");
 }

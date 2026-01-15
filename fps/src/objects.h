@@ -32,8 +32,9 @@ Object *WOOD;
 Object *STONE;
 Object *GRASS;
 Object *WATER;
+Object *FENCE;
 
 Object *RegisterObject(const char* name, Texture2D *texture);
-void RegisterObjects();
+void RegisterAllObjects();
 
 #endif

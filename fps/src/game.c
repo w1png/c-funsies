@@ -1,4 +1,5 @@
 #include "const.h"
+#include "crafting.h"
 #include "texture.h"
 #include "objects.h"
 #include "raylib.h"
@@ -29,7 +30,7 @@ typedef struct {
 } GameUpdateResult;
 
 void HandleGameUpdate(GameUpdateData* data, GameUpdateResult* result) {
-  SetScreenOpen(playerInventoryMenu, true);
+  SetScreenOpen(inventoryHUD, true);
 
   camera.zoom = expf(logf(camera.zoom) + ((float)GetMouseWheelMove()*0.1f));
 
@@ -147,7 +148,8 @@ int main(void)
     SetExitKey(0);
 
     LoadTextures();
-    RegisterObjects();
+    RegisterAllObjects();
+    RegisterAllCraftingRecipes();
     RegisterAllUIScreens();
 
     bool debugEnabled = false;
@@ -165,7 +167,7 @@ int main(void)
     pauseMenu->data = &pauseMenuData;
 
     PlayerInventoryData playerInventoryData = {.player = &player};
-    playerInventoryMenu->data = &playerInventoryData;
+    inventoryHUD->data = &playerInventoryData;
 
     DebugMenuData debugMenuData = { .world = world, .player = &player, .hoveredTile = &hoveredTile, .camera = &camera};
     debugMenu->data = &debugMenuData;
@@ -174,17 +176,28 @@ int main(void)
       .player = &player,
       .world = world,
     };
-    debugInfo->data = &debugMenuData;
+    debugHUD->data = &debugMenuData;
+
+    InventoryMenuData inventoryMenuData = { .player = &player, .camera = &camera };
+    inventoryMenu->data = &inventoryMenuData;
 
     GameUpdateResult gameUpdateResult = {};
 
     SetTargetFPS(TARGET_FPS);
     while (!WindowShouldClose() && !isExiting) {
+      if (IsKeyPressed(KEY_E)) {
+        SetScreenOpen(inventoryMenu, true);
+      }
       if (IsKeyPressed(KEY_BACKSLASH)) {
-        SetScreenOpen(debugMenu, !debugMenu->isOpen);
+        SetScreenOpen(debugMenu, true);
       }
       if (IsKeyPressed(KEY_ESCAPE)) {
-        SetScreenOpen(pauseMenu, !pauseMenu->isOpen);
+        UIScreen* lock = GetUILock();
+        if (lock == NULL) {
+          SetScreenOpen(pauseMenu, true);
+        } else {
+          SetScreenOpen(lock, false);
+        }
       }
 
       if (HAS_TAG(&gameState, TAG_PLAYING) && GetUILock() == NULL) {

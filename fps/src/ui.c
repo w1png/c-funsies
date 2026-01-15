@@ -1,5 +1,7 @@
 #include "ui.h"
+#include "crafting.h"
 #include "objects.h"
+#include "player.h"
 #include "raylib.h"
 #include <stdatomic.h>
 #define RAYGUI_IMPLEMENTATION
@@ -7,9 +9,10 @@
 #include "const.h"
 
 UIScreen* pauseMenu;
-UIScreen* playerInventoryMenu;
+UIScreen* inventoryHUD;
 UIScreen* debugMenu;
-UIScreen* debugInfo;
+UIScreen* debugHUD;
+UIScreen* inventoryMenu;
 
 UIScreen ui_screens[MAX_UI_SCREENS];
 int ui_screen_count = 0;
@@ -94,7 +97,7 @@ void HandlePauseMenu(void* screen) {
   }
 }
 
-void HandlePlayerInventoryMenu(void* screen) {
+void HandlePlayerInventoryHUD(void* screen) {
   UIScreen* us = screen;
   PlayerInventoryData* data = us->data;
   Player* player = data->player;
@@ -133,17 +136,16 @@ void HandleDebugMenu(void* screen) {
   float height = PADDING*2+BUTTON_HEIGHT*totalButtons+GAP*(totalButtons-1);
   Vector2 position = (Vector2){GetScreenWidth()/2.0f - width/2.0f, GetScreenHeight()/2.0f - height/2.0f};
 
-  if (us->isOpen) {
-    DrawBackground();
-    DrawRectangle(position.x, position.y, width, height, WHITE);
-    GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s FPS", data->features.showFPS ? "Hide" : "Show"), &data->features.showFPS);
-    GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT + GAP, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s hovered tile type", data->features.showHoveredTileType ? "Hide" : "Show"), &data->features.showHoveredTileType);
-    GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*2 + GAP*2, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s collisions", data->features.showCollisions ? "Hide" : "Show"), &data->features.showCollisions);
-    GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*3 + GAP*3, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s break time", data->features.showBreakTime ? "Hide" : "Show"), &data->features.showBreakTime);
-    GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*4 + GAP*4, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s ui lock", data->features.showUILock ? "Hide" : "Show"), &data->features.showUILock);
-    if (GuiButton((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*(totalButtons-1) + GAP*(totalButtons-1), width - PADDING*2, BUTTON_HEIGHT}, "Close")) {
-      SetScreenOpen(us, false);
-    }
+  if (!us->isOpen) return;
+  DrawBackground();
+  DrawRectangle(position.x, position.y, width, height, WHITE);
+  GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s FPS", data->features.showFPS ? "Hide" : "Show"), &data->features.showFPS);
+  GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT + GAP, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s hovered tile type", data->features.showHoveredTileType ? "Hide" : "Show"), &data->features.showHoveredTileType);
+  GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*2 + GAP*2, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s collisions", data->features.showCollisions ? "Hide" : "Show"), &data->features.showCollisions);
+  GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*3 + GAP*3, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s break time", data->features.showBreakTime ? "Hide" : "Show"), &data->features.showBreakTime);
+  GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*4 + GAP*4, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s ui lock", data->features.showUILock ? "Hide" : "Show"), &data->features.showUILock);
+  if (GuiButton((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*(totalButtons-1) + GAP*(totalButtons-1), width - PADDING*2, BUTTON_HEIGHT}, "Close")) {
+    SetScreenOpen(us, false);
   }
 }
 
@@ -215,17 +217,116 @@ void HandleDebugInfo(void* screen) {
   }
 }
 
+void HandleInventoryMenu(void* screen) {
+  UIScreen* us = screen;
+  InventoryMenuData* data = us->data;
+  Player* player = data->player;
+  Camera2D* camera = data->camera;
+
+  float width = (PADDING+BUTTON_HEIGHT*MAX_INVENTORY_OBJECTS+GAP/2*MAX_INVENTORY_OBJECTS)*2+PADDING;
+  float height = 400;
+  Vector2 position = (Vector2){GetScreenWidth()/2.0f - width/2.0f, GetScreenHeight()/2.0f - height/2.0f};
+
+  if (!us->isOpen) return;
+
+  DrawBackground();
+  DrawRectangle(position.x, position.y, width, height, WHITE);
+  DrawRectangleLines(position.x, position.y, width/2, height, BLACK);
+  DrawRectangleLines(position.x + width/2, position.y, width/2, height, BLACK);
+
+  for (int i = 0; i < MAX_INVENTORY_OBJECTS; i++) {
+    InventoryObject *object = player->inventory[i];
+    int posX = position.x+PADDING+BUTTON_HEIGHT*i+GAP/2*i;
+    int posY = position.y+PADDING;
+    if (GuiButton((Rectangle){posX, posY, BUTTON_HEIGHT, BUTTON_HEIGHT}, "")) {
+      // player->selectedInventoryObjectIndex = i;
+    }
+    if (object != NULL) {
+      DrawTexturePro(
+        *object->object->texture,
+        (Rectangle){ 0, 0, (float)object->object->texture->width, (float)object->object->texture->height },
+        (Rectangle){ posX+2, posY+2, BUTTON_HEIGHT-4, BUTTON_HEIGHT-4},
+        (Vector2){ 0, 0 },
+        0.0f,
+        WHITE
+      );
+      DrawText(TextFormat("%i", object->amount), posX+PADDING/4, posY, 24, WHITE);
+    }
+
+    // if (i == player->selectedInventoryObjectIndex) {
+    //   DrawRectangle(posX, posY, BUTTON_HEIGHT, BUTTON_HEIGHT, (Color){0,255,0,100});
+    // }
+  }
+
+  for (int i = 0; i < craftingRecipesCount; i++) {
+    CraftingRecipe *recipe = &craftingRecipes[i];
+    int posX = width/2+position.x+PADDING+BUTTON_HEIGHT*i+GAP/2*i;
+    int posY = position.y+PADDING;
+    int maxCraftAmount = GetMaxCraftAmount(recipe, player);
+    if (GuiButton((Rectangle){posX, posY, BUTTON_HEIGHT, BUTTON_HEIGHT}, "")) {
+      printf("maxCraftAmount: %d\n", maxCraftAmount);
+      if (CraftRecipe(recipe, 1, player) != 0) {
+        TraceLog(LOG_ERROR, "Failed to craft recipe %s", recipe->name);
+        continue;
+      }
+    }
+    DrawTexturePro(
+      *recipe->result->texture,
+      (Rectangle){ 0, 0, (float)recipe->result->texture->width, (float)recipe->result->texture->height },
+      (Rectangle){ posX+2, posY+2, BUTTON_HEIGHT-4, BUTTON_HEIGHT-4},
+      (Vector2){ 0, 0 },
+      0.0f,
+      WHITE
+    );
+
+    if (!maxCraftAmount) {
+      DrawRectangle(posX, posY, BUTTON_HEIGHT, BUTTON_HEIGHT, (Color){255,0,0,100});
+    }
+
+    if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){posX, posY, BUTTON_HEIGHT, BUTTON_HEIGHT})) {
+        int tooltipX = posX;
+        int tooltipY = posY + BUTTON_HEIGHT + 6;
+
+        int fontSize = 16;
+        int lineHeight = fontSize + 2;
+
+        int tooltipHeight = lineHeight*(recipe->ingredientsCount + 2)+GAP*2;
+        int currentY = tooltipY + GAP;
+        int tooltipWidth  = BUTTON_HEIGHT * 2.5;
+
+        DrawRectangle(tooltipX, tooltipY, tooltipWidth, tooltipHeight + GAP*2,
+                      WHITE);
+        DrawRectangleLines(tooltipX, tooltipY, tooltipWidth, tooltipHeight + GAP*2,
+                           maxCraftAmount > 0 ? GREEN : RED);
+
+
+        DrawText(recipe->name, tooltipX + GAP, currentY, fontSize + 4, maxCraftAmount != 0 ? BLACK : RED);
+        currentY += lineHeight + GAP;
+
+        DrawText("Ingredients:", tooltipX + GAP, currentY, fontSize, BLACK);
+        currentY += lineHeight;
+
+        for (int j = 0; j < recipe->ingredientsCount; j++)
+        {
+            CraftingIngredient ingredient = recipe->ingredients[j];
+            DrawText(TextFormat("  %s x%d", ingredient.object->name, ingredient.amount), tooltipX + GAP, currentY, fontSize, HasInventoryObject(player, ingredient.object, ingredient.amount) ? GREEN : RED);
+            currentY += lineHeight;
+        }
+    }
+  }
+}
+
 void RegisterAllUIScreens() {
-  playerInventoryMenu = RegisterUIScreen("Player Inventory");
-  playerInventoryMenu->handle = HandlePlayerInventoryMenu;
+  inventoryHUD = RegisterUIScreen("Player Inventory");
+  inventoryHUD->handle = HandlePlayerInventoryHUD;
   PlayerInventoryData playerInventoryData = { .player = NULL };
-  playerInventoryMenu->data = &playerInventoryData;
+  inventoryHUD->data = &playerInventoryData;
 
   DebugMenuData debugMenuData = { .world = NULL, .player = NULL, .hoveredTile = NULL, .camera = NULL };
-  debugInfo = RegisterUIScreen("Debug Info");
-  debugInfo->handle = HandleDebugInfo;
-  debugInfo->data = &debugMenuData;
-  debugInfo->isOpen = true;
+  debugHUD = RegisterUIScreen("Debug Info");
+  debugHUD->handle = HandleDebugInfo;
+  debugHUD->data = &debugMenuData;
+  debugHUD->isOpen = true;
 
   debugMenu = RegisterUIScreen("Debug");
   debugMenu->handle = HandleDebugMenu;
@@ -237,4 +338,10 @@ void RegisterAllUIScreens() {
   PauseMenuData pauseMenuData = { .isExiting = NULL };
   pauseMenu->data = &pauseMenuData;
   pauseMenu->isBlocking = true;
+
+  inventoryMenu = RegisterUIScreen("Inventory");
+  inventoryMenu->handle = HandleInventoryMenu;
+  InventoryMenuData inventoryMenuData = { .player = NULL };
+  inventoryMenu->data = &inventoryMenuData;
+  inventoryMenu->isBlocking = true;
 }
