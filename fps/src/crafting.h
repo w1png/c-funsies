@@ -18,11 +18,15 @@ typedef struct {
   int resultAmount;
 } CraftingRecipe;
 
-extern CraftingRecipe craftingRecipes[MAX_CRAFTING_RECIPES];
+CraftingRecipe craftingRecipesArr[MAX_CRAFTING_RECIPES];
 extern int craftingRecipesCount;
 
-CraftingRecipe* FENCE_RECIPE;
-CraftingRecipe* CHEST_RECIPE;
+typedef struct {
+  CraftingRecipe* fence;
+  CraftingRecipe* chest;
+} CraftingRecipes;
+extern CraftingRecipes craftingRecipes;
+
 
 void RegisterAllCraftingRecipes();
 

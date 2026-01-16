@@ -31,7 +31,7 @@ void GeneratePond(Tile *world) {
 
                 Tile *tile = &world[y * MAX_WORLD_SIZE + x];
 
-                if (tile->object != WATER) {
+                if (tile->object != objects.water) {
                     int chance = 100;
 
                     if (r >= 3) {
@@ -40,7 +40,7 @@ void GeneratePond(Tile *world) {
                     }
 
                     if (GetRandomValue(0, 99) < chance) {
-                        tile->object = WATER;
+                        tile->object = objects.water;
                         placed++;
 
                         if (placed >= target) goto done;
@@ -61,13 +61,13 @@ void GenerateWorld(Tile* world, Rectangle playerBounds) {
     for (int j = 0; j < MAX_WORLD_SIZE; j++) {
       Tile *tile = &world[i*(int)MAX_WORLD_SIZE+j];
       tile->bounds = (Rectangle){ i*POINT_SIZE, j*POINT_SIZE, POINT_SIZE, POINT_SIZE };
-      tile->object = GRASS;
+      tile->object = objects.grass;
 
       if (!CheckCollisionRecs(playerBounds, tile->bounds)) {
         if (GetRandomValue(0, 100) < 5) {
-          tile->object = TREE;
+          tile->object = objects.tree;
         } else if (GetRandomValue(0, 100) < 5) {
-          tile->object = STONE;
+          tile->object = objects.stone;
         }
       }
 

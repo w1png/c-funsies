@@ -30,7 +30,7 @@ typedef struct {
 } GameUpdateResult;
 
 void HandleGameUpdate(GameUpdateData* data, GameUpdateResult* result) {
-  SetScreenOpen(inventoryHUD, true);
+  SetScreenOpen(uiScreens.inventoryHUD, true);
 
   HandleCameraZoom();
 
@@ -169,37 +169,37 @@ int main(void)
 
     bool isExiting = false;
     PauseMenuData pauseMenuData = { &isExiting };
-    pauseMenu->data = &pauseMenuData;
+    uiScreens.pauseMenu->data = &pauseMenuData;
 
     PlayerInventoryData playerInventoryData = {.player = &player};
-    inventoryHUD->data = &playerInventoryData;
+    uiScreens.inventoryHUD->data = &playerInventoryData;
 
     DebugMenuData debugMenuData = { .world = world, .player = &player, .hoveredTile = &hoveredTile};
-    debugMenu->data = &debugMenuData;
+    uiScreens.debugMenu->data = &debugMenuData;
 
     GameUpdateData gameUpdateData = {
       .player = &player,
       .world = world,
     };
-    debugHUD->data = &debugMenuData;
+    uiScreens.debugHUD->data = &debugMenuData;
 
     InventoryMenuData inventoryMenuData = { .player = &player };
-    inventoryMenu->data = &inventoryMenuData;
+    uiScreens.inventoryMenu->data = &inventoryMenuData;
 
     GameUpdateResult gameUpdateResult = {.deltaX = 0, .deltaY = 0};
 
     SetTargetFPS(TARGET_FPS);
     while (!WindowShouldClose() && !isExiting) {
       if (IsKeyPressed(KEY_E)) {
-        SetScreenOpen(inventoryMenu, true);
+        SetScreenOpen(uiScreens.inventoryMenu, true);
       }
       if (IsKeyPressed(KEY_BACKSLASH)) {
-        SetScreenOpen(debugMenu, true);
+        SetScreenOpen(uiScreens.debugMenu, true);
       }
       if (IsKeyPressed(KEY_ESCAPE)) {
         UIScreen* lock = GetUILock();
         if (lock == NULL) {
-          SetScreenOpen(pauseMenu, true);
+          SetScreenOpen(uiScreens.pauseMenu, true);
         } else {
           SetScreenOpen(lock, false);
         }

@@ -20,6 +20,7 @@ typedef struct {
   const char *name;
   uint32_t tags;
   Texture2D *texture;
+
   void* data;
 
   float breakTimeSeconds;
@@ -35,13 +36,17 @@ typedef struct {
   int amount;
 } ContainerObject;
 
-Object *TREE;
-Object *WOOD;
-Object *STONE;
-Object *GRASS;
-Object *WATER;
-Object *FENCE;
-Object *CHEST;
+typedef struct {
+  Object *tree;
+  Object *wood;
+  Object *stone;
+  Object *grass;
+  Object *water;
+  Object *fence;
+  Object *chest;
+} Objects;
+
+extern Objects objects;
 
 Object *RegisterObject(const char* name, Texture2D *texture);
 void RegisterAllObjects();

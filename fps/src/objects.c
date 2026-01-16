@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+Objects objects;
+
 Object objectDefs[MAX_OBJECTS];
 int objectDefsCount = 0;
 
@@ -27,8 +29,8 @@ Object *RegisterObject(const char* name, Texture2D *texture) {
 
 int OnBreakTree(void* object, void *data, void *player) {
   Tile *tile = (Tile*)data;
-  AddToPlayerInventory(WOOD, GetRandomValue(1, 3), player);
-  tile->object = GRASS;
+  AddToPlayerInventory(objects.wood, GetRandomValue(1, 3), player);
+  tile->object = objects.grass;
 
   return 0;
 }
@@ -38,7 +40,7 @@ int OnBreakGeneric(void* object, void *data, void *player) {
 
   Tile *tile = (Tile*)data;
   AddToPlayerInventory(obj, 1, player);
-  tile->object = GRASS;
+  tile->object = objects.grass;
   tile->data = NULL;
 
   return 0;
@@ -55,8 +57,8 @@ int OnClickContainer(void* object, void* data, void *player) {
   ContainerMenuData *d = malloc(sizeof(ContainerMenuData));
   d->tile = (Tile*)data;
   d->player = (Player*)player;
-  containerMenu->data = d;
-  SetScreenOpen(containerMenu, true);
+  uiScreens.containerMenu->data = d;
+  SetScreenOpen(uiScreens.containerMenu, true);
 
   return 0;
 }
@@ -88,41 +90,41 @@ int OnPlaceContainer(void* object, void* data, void *player) {
 
 void RegisterAllObjects() {
   TraceLog(LOG_INFO, "Registering objects");
-  TREE = RegisterObject("tree", &textures.tree);
-  TREE->tags = TAG_BLOCKING | TAG_BREAKABLE;
-  TREE->breakTimeSeconds = 1;
-  TREE->onBreak = OnBreakTree;
+  objects.tree = RegisterObject("tree", &textures.tree);
+  objects.tree->tags = TAG_BLOCKING | TAG_BREAKABLE;
+  objects.tree->breakTimeSeconds = 1;
+  objects.tree->onBreak = OnBreakTree;
 
-  WOOD = RegisterObject("wood", &textures.wood);
-  WOOD->tags = TAG_BLOCKING | TAG_BREAKABLE | TAG_PLACEABLE;
-  WOOD->breakTimeSeconds = 0.5;
-  WOOD->onBreak = OnBreakGeneric;
-  WOOD->onPlace = OnPlaceGeneric;
+  objects.wood = RegisterObject("wood", &textures.wood);
+  objects.wood->tags = TAG_BLOCKING | TAG_BREAKABLE | TAG_PLACEABLE;
+  objects.wood->breakTimeSeconds = 0.5;
+  objects.wood->onBreak = OnBreakGeneric;
+  objects.wood->onPlace = OnPlaceGeneric;
 
-  STONE = RegisterObject("stone", &textures.stone);
-  STONE->tags = TAG_BLOCKING | TAG_PLACEABLE | TAG_BREAKABLE;
-  STONE->breakTimeSeconds = 2;
-  STONE->onBreak = OnBreakGeneric;
-  STONE->onPlace = OnPlaceGeneric;
+  objects.stone = RegisterObject("stone", &textures.stone);
+  objects.stone->tags = TAG_BLOCKING | TAG_PLACEABLE | TAG_BREAKABLE;
+  objects.stone->breakTimeSeconds = 2;
+  objects.stone->onBreak = OnBreakGeneric;
+  objects.stone->onPlace = OnPlaceGeneric;
 
-  GRASS = RegisterObject("grass", &textures.grass);
-  GRASS->tags = TAG_EMPTY | TAG_BACKGROUND;
+  objects.grass = RegisterObject("grass", &textures.grass);
+  objects.grass->tags = TAG_EMPTY | TAG_BACKGROUND;
 
-  WATER = RegisterObject("water", &textures.water);
-  WATER->tags = TAG_BLOCKING | TAG_FISHING_SPOT | TAG_BACKGROUND;
+  objects.water = RegisterObject("water", &textures.water);
+  objects.water->tags = TAG_BLOCKING | TAG_FISHING_SPOT | TAG_BACKGROUND;
 
-  FENCE = RegisterObject("fence", &textures.placeholder);
-  FENCE->tags = TAG_BLOCKING | TAG_BREAKABLE | TAG_PLACEABLE;
-  FENCE->breakTimeSeconds = 0.5;
-  FENCE->onBreak = OnBreakGeneric;
-  FENCE->onPlace = OnPlaceGeneric;
+  objects.fence = RegisterObject("fence", &textures.placeholder);
+  objects.fence->tags = TAG_BLOCKING | TAG_BREAKABLE | TAG_PLACEABLE;
+  objects.fence->breakTimeSeconds = 0.5;
+  objects.fence->onBreak = OnBreakGeneric;
+  objects.fence->onPlace = OnPlaceGeneric;
 
-  CHEST = RegisterObject("chest", &textures.chest);
-  CHEST->tags = TAG_BLOCKING | TAG_BREAKABLE | TAG_PLACEABLE | TAG_CONTAINER | TAG_INTERACTABLE;
-  CHEST->breakTimeSeconds = 0.5;
-  CHEST->onBreak = OnBreakContainer;
-  CHEST->onClick = OnClickContainer;
-  CHEST->onPlace = OnPlaceContainer;
+  objects.chest = RegisterObject("chest", &textures.chest);
+  objects.chest->tags = TAG_BLOCKING | TAG_BREAKABLE | TAG_PLACEABLE | TAG_CONTAINER | TAG_INTERACTABLE;
+  objects.chest->breakTimeSeconds = 0.5;
+  objects.chest->onBreak = OnBreakContainer;
+  objects.chest->onClick = OnClickContainer;
+  objects.chest->onPlace = OnPlaceContainer;
 
   TraceLog(LOG_INFO, "Objects registered");
 }

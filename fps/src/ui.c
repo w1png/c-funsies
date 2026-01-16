@@ -9,7 +9,8 @@
 #include "lib/raygui.h"
 #include "const.h"
 
-UIScreen ui_screens[MAX_UI_SCREENS];
+UIScreens uiScreens;
+UIScreen uiScreensArr[MAX_UI_SCREENS];
 int ui_screen_count = 0;
 
 UIScreen* UI_LOCK = NULL;
@@ -48,7 +49,7 @@ UIScreen* RegisterUIScreen(const char* name) {
   }
 
   TraceLog(LOG_INFO, "Registering UI screen: %s", name);
-  UIScreen* us = &ui_screens[ui_screen_count++];
+  UIScreen* us = &uiScreensArr[ui_screen_count++];
   us->id = ui_screen_count - 1;
   us->name = name;
   us->isOpen = false;
@@ -61,7 +62,7 @@ UIScreen* RegisterUIScreen(const char* name) {
 void HandleAllUIUpdates() {
   UIScreen* us;
   for (int i = 0; i < ui_screen_count; i++) {
-    us = &ui_screens[i];
+    us = &uiScreensArr[i];
     if (us->isBlocking && !CanSetUILock(us->id)) {
       continue;
     };
@@ -256,7 +257,7 @@ void HandleInventoryMenu(void* screen) {
   }
 
   for (int i = 0; i < craftingRecipesCount; i++) {
-    CraftingRecipe *recipe = &craftingRecipes[i];
+    CraftingRecipe *recipe = &craftingRecipesArr[i];
     int posX = width/2+position.x+PADDING+BUTTON_HEIGHT*i+GAP/2*i;
     int posY = position.y+PADDING;
     int maxCraftAmount = GetMaxCraftAmount(recipe, player);
@@ -294,7 +295,6 @@ void HandleInventoryMenu(void* screen) {
                       WHITE);
         DrawRectangleLines(tooltipX, tooltipY, tooltipWidth, tooltipHeight + GAP*2,
                            maxCraftAmount > 0 ? GREEN : RED);
-
 
         DrawText(recipe->name, tooltipX + GAP, currentY, fontSize + 4, maxCraftAmount != 0 ? BLACK : RED);
         currentY += lineHeight + GAP;
@@ -416,37 +416,37 @@ void HandleContainerMenu(void* screen) {
 
 
 void RegisterAllUIScreens() {
-  inventoryHUD = RegisterUIScreen("Player Inventory");
-  inventoryHUD->handle = HandlePlayerInventoryHUD;
   PlayerInventoryData playerInventoryData = { .player = NULL };
-  inventoryHUD->data = &playerInventoryData;
+  uiScreens.inventoryHUD = RegisterUIScreen("Player Inventory");
+  uiScreens.inventoryHUD->handle = HandlePlayerInventoryHUD;
+  uiScreens.inventoryHUD->data = &playerInventoryData;
 
   DebugMenuData debugMenuData = { .world = NULL, .player = NULL, .hoveredTile = NULL };
-  debugHUD = RegisterUIScreen("Debug Info");
-  debugHUD->handle = HandleDebugInfo;
-  debugHUD->data = &debugMenuData;
-  debugHUD->isOpen = true;
+  uiScreens.debugHUD = RegisterUIScreen("Debug Info");
+  uiScreens.debugHUD->handle = HandleDebugInfo;
+  uiScreens.debugHUD->data = &debugMenuData;
+  uiScreens.debugHUD->isOpen = true;
 
-  debugMenu = RegisterUIScreen("Debug");
-  debugMenu->handle = HandleDebugMenu;
-  debugMenu->isBlocking = true;
-  debugMenu->data = &debugMenuData;
+  uiScreens.debugMenu = RegisterUIScreen("Debug");
+  uiScreens.debugMenu->handle = HandleDebugMenu;
+  uiScreens.debugMenu->isBlocking = true;
+  uiScreens.debugMenu->data = &debugMenuData;
 
-  pauseMenu = RegisterUIScreen("Pause Menu");
-  pauseMenu->handle = HandlePauseMenu;
   PauseMenuData pauseMenuData = { .isExiting = NULL };
-  pauseMenu->data = &pauseMenuData;
-  pauseMenu->isBlocking = true;
+  uiScreens.pauseMenu = RegisterUIScreen("Pause Menu");
+  uiScreens.pauseMenu->handle = HandlePauseMenu;
+  uiScreens.pauseMenu->data = &pauseMenuData;
+  uiScreens.pauseMenu->isBlocking = true;
 
-  inventoryMenu = RegisterUIScreen("Inventory");
-  inventoryMenu->handle = HandleInventoryMenu;
   InventoryMenuData inventoryMenuData = { .player = NULL };
-  inventoryMenu->data = &inventoryMenuData;
-  inventoryMenu->isBlocking = true;
+  uiScreens.inventoryMenu = RegisterUIScreen("Inventory");
+  uiScreens.inventoryMenu->handle = HandleInventoryMenu;
+  uiScreens.inventoryMenu->data = &inventoryMenuData;
+  uiScreens.inventoryMenu->isBlocking = true;
 
   ContainerMenuData containerMenuData = { .player = NULL, .tile = NULL };
-  containerMenu = RegisterUIScreen("Container");
-  containerMenu->data = &containerMenuData;
-  containerMenu->isBlocking = true;
-  containerMenu->handle = HandleContainerMenu;
+  uiScreens.containerMenu = RegisterUIScreen("Container");
+  uiScreens.containerMenu->data = &containerMenuData;
+  uiScreens.containerMenu->isBlocking = true;
+  uiScreens.containerMenu->handle = HandleContainerMenu;
 }

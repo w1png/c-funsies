@@ -21,19 +21,15 @@ void SetScreenOpen(UIScreen* us, bool isOpen);
 
 UIScreen* GetUILock();
 
-UIScreen* pauseMenu;
+
 typedef struct {
   bool* isExiting;
 } PauseMenuData;
 
-UIScreen* inventoryHUD;
 typedef struct {
   Player* player;
 } PlayerInventoryData;
 
-UIScreen* debugMenu;
-
-UIScreen* debugHUD;
 typedef struct {
   Tile* world;
   Player* player;
@@ -48,15 +44,24 @@ typedef struct {
   } features;
 } DebugMenuData;
 
-UIScreen* inventoryMenu;
 typedef struct {
   Player* player;
 } InventoryMenuData;
 
-UIScreen* containerMenu;
 typedef struct {
   Player* player;
   Tile* tile;
 } ContainerMenuData;
+
+typedef struct {
+  UIScreen* pauseMenu;
+  UIScreen* inventoryHUD;
+  UIScreen* debugMenu;
+  UIScreen* debugHUD;
+  UIScreen* inventoryMenu;
+  UIScreen* containerMenu;
+} UIScreens;
+
+extern UIScreens uiScreens;
 
 #endif

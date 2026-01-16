@@ -3,7 +3,8 @@
 #include "const.h"
 #include <stdlib.h>
 
-CraftingRecipe craftingRecipes[MAX_CRAFTING_RECIPES];
+CraftingRecipes craftingRecipes;
+CraftingRecipe craftingRecipesArr[MAX_CRAFTING_RECIPES];
 int craftingRecipesCount = 0;
 
 CraftingRecipe *RegisterCraftingRecipe(const char* name) {
@@ -13,7 +14,7 @@ CraftingRecipe *RegisterCraftingRecipe(const char* name) {
   }
 
   TraceLog(LOG_INFO, "Registering crafting recipe %s", name);
-  CraftingRecipe *recipe = &craftingRecipes[craftingRecipesCount++];
+  CraftingRecipe *recipe = &craftingRecipesArr[craftingRecipesCount++];
   recipe->id = craftingRecipesCount;
   recipe->name = name;
   TraceLog(LOG_INFO, "Crafting recipe %s registered", name);
@@ -23,19 +24,19 @@ CraftingRecipe *RegisterCraftingRecipe(const char* name) {
 void RegisterAllCraftingRecipes() {
   TraceLog(LOG_INFO, "Registering crafting recipes");
 
-  FENCE_RECIPE = RegisterCraftingRecipe("fence");
-  FENCE_RECIPE->ingredients[0].object = WOOD;
-  FENCE_RECIPE->ingredients[0].amount = 5;
-  FENCE_RECIPE->ingredientsCount = 1;
-  FENCE_RECIPE->resultAmount = 3;
-  FENCE_RECIPE->result = FENCE;
+  craftingRecipes.fence = RegisterCraftingRecipe("fence");
+  craftingRecipes.fence->ingredients[0].object = objects.wood;
+  craftingRecipes.fence->ingredients[0].amount = 5;
+  craftingRecipes.fence->ingredientsCount = 1;
+  craftingRecipes.fence->resultAmount = 3;
+  craftingRecipes.fence->result = objects.fence;
 
-  CHEST_RECIPE = RegisterCraftingRecipe("chest");
-  CHEST_RECIPE->ingredients[0].object = WOOD;
-  CHEST_RECIPE->ingredients[0].amount = 8;
-  CHEST_RECIPE->ingredientsCount = 1;
-  CHEST_RECIPE->resultAmount = 1;
-  CHEST_RECIPE->result = CHEST;
+  craftingRecipes.chest = RegisterCraftingRecipe("chest");
+  craftingRecipes.chest->ingredients[0].object = objects.wood;
+  craftingRecipes.chest->ingredients[0].amount = 8;
+  craftingRecipes.chest->ingredientsCount = 1;
+  craftingRecipes.chest->resultAmount = 1;
+  craftingRecipes.chest->result = objects.chest;
 
   TraceLog(LOG_INFO, "Crafting recipes registered");
 }
