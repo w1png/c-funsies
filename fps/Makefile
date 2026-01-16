@@ -1,5 +1,5 @@
 CC = cc
-CFLAGS = -I./src `pkg-config --cflags raylib`
+CFLAGS = -g -I./src `pkg-config --cflags raylib`
 LIBS = `pkg-config --libs raylib` -framework IOKit -framework Cocoa -framework OpenGL
 
 SRC_DIR = src

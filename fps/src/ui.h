@@ -26,7 +26,7 @@ typedef struct {
   bool* isExiting;
 } PauseMenuData;
 
-extern UIScreen* inventoryHUD;
+UIScreen* inventoryHUD;
 typedef struct {
   Player* player;
 } PlayerInventoryData;
@@ -38,7 +38,6 @@ typedef struct {
   Tile* world;
   Player* player;
   Tile** hoveredTile;
-  Camera2D* camera;
 
   struct {
     bool showFPS;
@@ -52,7 +51,12 @@ typedef struct {
 UIScreen* inventoryMenu;
 typedef struct {
   Player* player;
-  Camera2D* camera;
 } InventoryMenuData;
+
+UIScreen* containerMenu;
+typedef struct {
+  Player* player;
+  Tile* tile;
+} ContainerMenuData;
 
 #endif

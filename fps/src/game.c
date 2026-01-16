@@ -1,3 +1,4 @@
+#include "camera.h"
 #include "const.h"
 #include "crafting.h"
 #include "texture.h"
@@ -17,7 +18,6 @@ Tile* hoveredTile = NULL;
 GameState gameState = {
   .tags = TAG_PLAYING,
 };
-Camera2D camera = { 0 };
 
 typedef struct {
   Player* player;
@@ -32,10 +32,7 @@ typedef struct {
 void HandleGameUpdate(GameUpdateData* data, GameUpdateResult* result) {
   SetScreenOpen(inventoryHUD, true);
 
-  camera.zoom = expf(logf(camera.zoom) + ((float)GetMouseWheelMove()*0.1f));
-
-  if (camera.zoom > MIN_ZOOM) camera.zoom = MIN_ZOOM;
-  else if (camera.zoom < MAX_ZOOM) camera.zoom = MAX_ZOOM;
+  HandleCameraZoom();
 
   if (IsKeyPressed(KEY_ONE)) {
     data->player->selectedInventoryObjectIndex = 0;
@@ -99,15 +96,25 @@ void HandleGameUpdate(GameUpdateData* data, GameUpdateResult* result) {
               isBreaking = true;
             }
 
-            if (HAS_TAG(tile->object, TAG_EMPTY) && IsMouseButtonDown(MOUSE_RIGHT_BUTTON)) { 
-              InventoryObject *inventoryObject = data->player->inventory[data->player->selectedInventoryObjectIndex];
-              if (
-                inventoryObject != NULL && HAS_TAG(inventoryObject->object, TAG_PLACEABLE) && 
-                !CheckCollisionRecs(data->player->bounds, tile->bounds)
-              ) {
-                tile->object = inventoryObject->object;
-                inventoryObject->amount--;
-                HandleUpdateInventory(data->player);
+            if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON)) {
+              if (HAS_TAG(tile->object, TAG_EMPTY)) { 
+                InventoryObject *inventoryObject = data->player->inventory[data->player->selectedInventoryObjectIndex];
+                if (
+                  inventoryObject != NULL && HAS_TAG(inventoryObject->object, TAG_PLACEABLE) && 
+                  !CheckCollisionRecs(data->player->bounds, tile->bounds)
+                ) {
+                  if (inventoryObject->object->onPlace != NULL) {
+                    inventoryObject->object->onPlace(inventoryObject->object, tile, data->player);
+                  }
+                }
+              }
+            }
+
+            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+              if (HAS_TAG(tile->object, TAG_INTERACTABLE)) { 
+                if (tile->object->onClick != NULL) {
+                  tile->object->onClick(tile->object, tile, data->player);
+                }
               }
             }
         }
@@ -134,15 +141,15 @@ void HandleGameUpdate(GameUpdateData* data, GameUpdateResult* result) {
   if (hasCollidedWall) {
     data->player->bounds = playerPositionBefore;
   }
-  
-  camera.target = (Vector2){ data->player->bounds.x + 20.0f, data->player->bounds.y + 20.0f };
-  camera.offset = (Vector2){ GetScreenWidth()/2.0f, GetScreenHeight()/2.0f };
+
+  HandleCameraTarget(data->player);
 }
 
 int main(void)
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "SomeGame");
+    InitCamera();
     InitAudioDevice();
     SetRandomSeed(clock());
     SetExitKey(0);
@@ -160,8 +167,6 @@ int main(void)
     InitPlayer(&player);
     GenerateWorld(world, player.bounds);
 
-    camera.zoom = 0.5f;
-
     bool isExiting = false;
     PauseMenuData pauseMenuData = { &isExiting };
     pauseMenu->data = &pauseMenuData;
@@ -169,7 +174,7 @@ int main(void)
     PlayerInventoryData playerInventoryData = {.player = &player};
     inventoryHUD->data = &playerInventoryData;
 
-    DebugMenuData debugMenuData = { .world = world, .player = &player, .hoveredTile = &hoveredTile, .camera = &camera};
+    DebugMenuData debugMenuData = { .world = world, .player = &player, .hoveredTile = &hoveredTile};
     debugMenu->data = &debugMenuData;
 
     GameUpdateData gameUpdateData = {
@@ -178,10 +183,10 @@ int main(void)
     };
     debugHUD->data = &debugMenuData;
 
-    InventoryMenuData inventoryMenuData = { .player = &player, .camera = &camera };
+    InventoryMenuData inventoryMenuData = { .player = &player };
     inventoryMenu->data = &inventoryMenuData;
 
-    GameUpdateResult gameUpdateResult = {};
+    GameUpdateResult gameUpdateResult = {.deltaX = 0, .deltaY = 0};
 
     SetTargetFPS(TARGET_FPS);
     while (!WindowShouldClose() && !isExiting) {

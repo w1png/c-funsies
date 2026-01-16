@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "camera.h"
 #include "crafting.h"
 #include "objects.h"
 #include "player.h"
@@ -7,12 +8,6 @@
 #define RAYGUI_IMPLEMENTATION
 #include "lib/raygui.h"
 #include "const.h"
-
-UIScreen* pauseMenu;
-UIScreen* inventoryHUD;
-UIScreen* debugMenu;
-UIScreen* debugHUD;
-UIScreen* inventoryMenu;
 
 UIScreen ui_screens[MAX_UI_SCREENS];
 int ui_screen_count = 0;
@@ -47,6 +42,11 @@ void SetScreenOpen(UIScreen* us, bool isOpen) {
 
 
 UIScreen* RegisterUIScreen(const char* name) {
+  if (ui_screen_count >= MAX_UI_SCREENS) {
+    TraceLog(LOG_ERROR, "Too many UI screens registered");
+    exit(1);
+  }
+
   TraceLog(LOG_INFO, "Registering UI screen: %s", name);
   UIScreen* us = &ui_screens[ui_screen_count++];
   us->id = ui_screen_count - 1;
@@ -180,7 +180,7 @@ void HandleDebugInfo(void* screen) {
             tile.bounds.x,
             tile.bounds.y,
           }, 
-          *data->camera
+          camera
         );
 
         DrawRectangleLinesEx(
@@ -206,7 +206,7 @@ void HandleDebugInfo(void* screen) {
               tile.bounds.x + tile.bounds.width / 2.0f -20,
               tile.bounds.y + tile.bounds.height / 2.0f -20
             }, 
-            *data->camera
+            camera
           ),
           6,
           1,
@@ -221,7 +221,6 @@ void HandleInventoryMenu(void* screen) {
   UIScreen* us = screen;
   InventoryMenuData* data = us->data;
   Player* player = data->player;
-  Camera2D* camera = data->camera;
 
   float width = (PADDING+BUTTON_HEIGHT*MAX_INVENTORY_OBJECTS+GAP/2*MAX_INVENTORY_OBJECTS)*2+PADDING;
   float height = 400;
@@ -238,9 +237,7 @@ void HandleInventoryMenu(void* screen) {
     InventoryObject *object = player->inventory[i];
     int posX = position.x+PADDING+BUTTON_HEIGHT*i+GAP/2*i;
     int posY = position.y+PADDING;
-    if (GuiButton((Rectangle){posX, posY, BUTTON_HEIGHT, BUTTON_HEIGHT}, "")) {
-      // player->selectedInventoryObjectIndex = i;
-    }
+    GuiButton((Rectangle){posX, posY, BUTTON_HEIGHT, BUTTON_HEIGHT}, "");
     if (object != NULL) {
       DrawTexturePro(
         *object->object->texture,
@@ -264,7 +261,6 @@ void HandleInventoryMenu(void* screen) {
     int posY = position.y+PADDING;
     int maxCraftAmount = GetMaxCraftAmount(recipe, player);
     if (GuiButton((Rectangle){posX, posY, BUTTON_HEIGHT, BUTTON_HEIGHT}, "")) {
-      printf("maxCraftAmount: %d\n", maxCraftAmount);
       if (CraftRecipe(recipe, 1, player) != 0) {
         TraceLog(LOG_ERROR, "Failed to craft recipe %s", recipe->name);
         continue;
@@ -316,13 +312,116 @@ void HandleInventoryMenu(void* screen) {
   }
 }
 
+void HandleContainerMenu(void* screen) {
+  UIScreen* us = screen;
+  ContainerMenuData* data = us->data;
+  Player* player = data->player;
+
+  float width = (PADDING+BUTTON_HEIGHT*MAX_INVENTORY_OBJECTS+GAP/2*MAX_INVENTORY_OBJECTS)*2+PADDING;
+  float height = 400;
+  Vector2 position = (Vector2){GetScreenWidth()/2.0f - width/2.0f, GetScreenHeight()/2.0f - height/2.0f};
+
+  if (!us->isOpen) return;
+
+  DrawBackground();
+  DrawRectangle(position.x, position.y, width, height, WHITE);
+  DrawRectangleLines(position.x, position.y, width/2, height, BLACK);
+  DrawRectangleLines(position.x + width/2, position.y, width/2, height, BLACK);
+
+  ContainerObject* containerObjects = data->tile->data;
+  for (int i = 0; i < MAX_INVENTORY_OBJECTS; i++) {
+    InventoryObject *object = player->inventory[i];
+    bool isFreeSlot = object == NULL || object->object == NULL || object->amount == 0;
+    int posX = position.x+PADDING+BUTTON_HEIGHT*i+GAP/2*i;
+    int posY = position.y+PADDING;
+    if (GuiButton((Rectangle){posX, posY, BUTTON_HEIGHT, BUTTON_HEIGHT}, "")) {
+      if (isFreeSlot) return;
+      for (int j = 0; j < CHEST_SIZE; j++) {
+        if (containerObjects[j].object == player->inventory[i]->object) {
+          containerObjects[j].amount += player->inventory[i]->amount;
+          player->inventory[i]->amount = 0;
+          TraceLog(LOG_INFO, "Removing item from container %s", containerObjects[j].object->name);
+          break;
+        } else if (containerObjects[j].object == NULL || containerObjects[j].amount == 0) {
+          containerObjects[j].amount = player->inventory[i]->amount;
+          containerObjects[j].object = player->inventory[i]->object;
+          player->inventory[i] = NULL;
+          TraceLog(LOG_INFO, "Putting item into container %s", containerObjects[j].object->name);
+          break;
+        }
+      }
+    }
+    if (!isFreeSlot) {
+      DrawTexturePro(
+        *object->object->texture,
+        (Rectangle){ 0, 0, (float)object->object->texture->width, (float)object->object->texture->height },
+        (Rectangle){ posX+2, posY+2, BUTTON_HEIGHT-4, BUTTON_HEIGHT-4},
+        (Vector2){ 0, 0 },
+        0.0f,
+        WHITE
+      );
+      DrawText(TextFormat("%i", object->amount), posX+PADDING/4, posY, 24, WHITE);
+    }
+  }
+
+
+  for (int i = 0; i < CHEST_SIZE; i++) {
+    ContainerObject containerObject = containerObjects[i];
+    bool isFreeSlot = containerObject.object == NULL || containerObject.amount == 0;
+
+    int posX = width/2+position.x+PADDING+BUTTON_HEIGHT*i+GAP/2*i;
+    int posY = position.y+PADDING;
+    if (GuiButton((Rectangle){posX, posY, BUTTON_HEIGHT, BUTTON_HEIGHT}, "")) {
+     if (isFreeSlot) return;
+
+      Object* movedObject = containerObjects[i].object;
+      int movedAmount = containerObjects[i].amount;
+
+      for (int j = 0; j < MAX_INVENTORY_OBJECTS; j++) {
+        if (player->inventory[j] && player->inventory[j]->object == movedObject) {
+          player->inventory[j]->amount += movedAmount;
+          containerObjects[i].object = NULL;
+          containerObjects[i].amount = 0;
+
+          TraceLog(LOG_INFO, "Stacked item into player inventory: %s", movedObject->name);
+          return;
+        }
+
+        if (player->inventory[j] == NULL) {
+          player->inventory[j] = calloc(1, sizeof(InventoryObject));
+          player->inventory[j]->object = movedObject;
+          player->inventory[j]->amount = movedAmount;
+
+          containerObjects[i].object = NULL;
+          containerObjects[i].amount = 0;
+
+          TraceLog(LOG_INFO, "Inserted item into player inventory: %s", movedObject->name);
+          return;
+        }
+      }
+    }
+    if (!isFreeSlot) {
+      DrawTexturePro(
+        *containerObject.object->texture,
+        (Rectangle){ 0, 0, (float)containerObject.object->texture->width, (float)containerObject.object->texture->height },
+        (Rectangle){ posX+2, posY+2, BUTTON_HEIGHT-4, BUTTON_HEIGHT-4},
+        (Vector2){ 0, 0 },
+        0.0f,
+        WHITE
+      );
+      DrawText(TextFormat("%i", containerObject.amount), posX+PADDING/4, posY, 24, WHITE);
+    }
+  }
+}
+
+
 void RegisterAllUIScreens() {
   inventoryHUD = RegisterUIScreen("Player Inventory");
   inventoryHUD->handle = HandlePlayerInventoryHUD;
   PlayerInventoryData playerInventoryData = { .player = NULL };
   inventoryHUD->data = &playerInventoryData;
 
-  DebugMenuData debugMenuData = { .world = NULL, .player = NULL, .hoveredTile = NULL, .camera = NULL };
+  DebugMenuData debugMenuData = { .world = NULL, .player = NULL, .hoveredTile = NULL };
   debugHUD = RegisterUIScreen("Debug Info");
   debugHUD->handle = HandleDebugInfo;
   debugHUD->data = &debugMenuData;
@@ -344,4 +443,10 @@ void RegisterAllUIScreens() {
   InventoryMenuData inventoryMenuData = { .player = NULL };
   inventoryMenu->data = &inventoryMenuData;
   inventoryMenu->isBlocking = true;
+
+  ContainerMenuData containerMenuData = { .player = NULL, .tile = NULL };
+  containerMenu = RegisterUIScreen("Container");
+  containerMenu->data = &containerMenuData;
+  containerMenu->isBlocking = true;
+  containerMenu->handle = HandleContainerMenu;
 }

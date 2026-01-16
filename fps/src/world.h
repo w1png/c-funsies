@@ -10,8 +10,9 @@ typedef struct {
   Object *object;
 
   float breakTimeSecondsPassed;
+  void* data;
 } Tile;
 
-void GenerateWorld(Tile *world, Rectangle playerBounds);
+void GenerateWorld(Tile* world, Rectangle playerBounds);
 
 #endif

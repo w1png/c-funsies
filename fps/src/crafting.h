@@ -20,7 +20,9 @@ typedef struct {
 
 extern CraftingRecipe craftingRecipes[MAX_CRAFTING_RECIPES];
 extern int craftingRecipesCount;
+
 CraftingRecipe* FENCE_RECIPE;
+CraftingRecipe* CHEST_RECIPE;
 
 void RegisterAllCraftingRecipes();
 

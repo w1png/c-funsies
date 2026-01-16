@@ -54,7 +54,7 @@ done:
     TraceLog(LOG_INFO, "Pond center (%d,%d) → %d / %d water tiles", cx, cy, placed, target);
 }
 
-void GenerateWorld(Tile *world, Rectangle playerBounds) {
+void GenerateWorld(Tile* world, Rectangle playerBounds) {
   TraceLog(LOG_INFO, "Generating world");
   for (int i = 0; i < MAX_WORLD_SIZE; i++) {
     TraceLog(LOG_INFO, "Generating row %i", i);
