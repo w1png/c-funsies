@@ -8,8 +8,8 @@
 
 void InitPlayer(Player *player) {
   player->bounds = (Rectangle){
-    GetRandomValue(10, MAX_WORLD_SIZE*POINT_SIZE),
-    GetRandomValue(10, MAX_WORLD_SIZE*POINT_SIZE),
+    0, // GetRandomValue(10, MAX_WORLD_SIZE*POINT_SIZE),
+    0, // GetRandomValue(10, MAX_WORLD_SIZE*POINT_SIZE),
     POINT_SIZE * PLAYER_SCALE,
     POINT_SIZE * PLAYER_SCALE
   };

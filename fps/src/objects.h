@@ -20,6 +20,7 @@ typedef struct {
   const char *name;
   uint32_t tags;
   Texture2D *texture;
+  Texture2D *breakTexture;
 
   void* data;
 

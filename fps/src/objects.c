@@ -1,4 +1,5 @@
 #include "objects.h"
+#include "particle.h"
 #include "player.h"
 #include "texture.h"
 #include "raylib.h"
@@ -27,10 +28,26 @@ Object *RegisterObject(const char* name, Texture2D *texture) {
   return object;
 }
 
+int OnBreakParticles(void* object, void *data) {
+  Object *obj = (Object*)object;
+  Tile *tile = (Tile*)data;
+  Vector2 pos = {
+    tile->bounds.x + tile->bounds.width / 2.0f,
+    tile->bounds.y + tile->bounds.height / 2.0f
+  };
+  if (RegisterParticleEmitter(pos, emitterConfigs.breakBlock) != 0) {
+    TraceLog(LOG_ERROR, "Failed to register particle emitter inside OnBreakParticles");
+    return -1;
+  }
+
+  return 0;
+}
+
 int OnBreakTree(void* object, void *data, void *player) {
   Tile *tile = (Tile*)data;
   AddToPlayerInventory(objects.wood, GetRandomValue(1, 3), player);
   tile->object = objects.grass;
+  // OnBreakParticles(object, data);
 
   return 0;
 }
@@ -42,6 +59,8 @@ int OnBreakGeneric(void* object, void *data, void *player) {
   AddToPlayerInventory(obj, 1, player);
   tile->object = objects.grass;
   tile->data = NULL;
+
+  // OnBreakParticles(object, data);
 
   return 0;
 }
@@ -89,7 +108,7 @@ int OnPlaceContainer(void* object, void* data, void *player) {
 }
 
 void RegisterAllObjects() {
-  TraceLog(LOG_INFO, "Registering objects");
+  TraceLog(LOG_INFO, "===Registering objects===");
   objects.tree = RegisterObject("tree", &textures.tree);
   objects.tree->tags = TAG_BLOCKING | TAG_BREAKABLE;
   objects.tree->breakTimeSeconds = 1;
@@ -126,6 +145,6 @@ void RegisterAllObjects() {
   objects.chest->onClick = OnClickContainer;
   objects.chest->onPlace = OnPlaceContainer;
 
-  TraceLog(LOG_INFO, "Objects registered");
+  TraceLog(LOG_INFO, "===Objects registered===");
 }
 

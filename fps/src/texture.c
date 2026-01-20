@@ -18,7 +18,7 @@ Texture2D LoadTextureWithFallback(const char* path) {
 }
 
 void LoadTextures() {
-  TraceLog(LOG_INFO, "Loading textures");
+  TraceLog(LOG_INFO, "===Loading textures===");
   textures.placeholder = LoadTextureWithFallback("./assets/textures/placeholder.png");
   if (!IsTextureValid(textures.placeholder)) {
     TraceLog(LOG_ERROR, "Failed to load texture ./assets/textures/placeholder.png");
@@ -33,5 +33,5 @@ void LoadTextures() {
   textures.stone = LoadTextureWithFallback("./assets/textures/stone.png");
   textures.wood = LoadTextureWithFallback("./assets/textures/wood.png");
   textures.chest = LoadTextureWithFallback("./assets/textures/chest.png");
-  TraceLog(LOG_INFO, "Textures loaded");
+  TraceLog(LOG_INFO, "===Textures loaded===");
 }

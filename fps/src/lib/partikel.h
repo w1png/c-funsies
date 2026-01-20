@@ -66,7 +66,7 @@
 // -----------------------------------------------------------------------
 // UNCOMMENT THE FOLLOWING LINE FOR DEVELOPMENT OF THIS HEADER FILE ONLY.
 // If you don't most tools, such as lsp, static analysis, etc. might not work.
-#define LIBPARTIKEL_IMPLEMENTATION
+// #define LIBPARTIKEL_IMPLEMENTATION
 // -----------------------------------------------------------------------
 
 // Allow custom memory allocators.
@@ -338,6 +338,7 @@ struct Emitter {
 Emitter *Emitter_New(EmitterConfig cfg) {
   Emitter *e = PARTIKEL_ALLOC(1, sizeof(Emitter));
   if (e == NULL) {
+    printf("Failed to allocate memory for emitter\n");
     return NULL;
   }
   e->config = cfg;
@@ -346,6 +347,7 @@ Emitter *Emitter_New(EmitterConfig cfg) {
   e->particles = PARTIKEL_ALLOC(e->config.capacity, sizeof(Particle *));
   if (e->particles == NULL) {
     PARTIKEL_FREE(e);
+    printf("Failed to allocate memory for particles\n");
     return NULL;
   }
   e->mustEmit = 0;

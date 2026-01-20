@@ -22,7 +22,7 @@ CraftingRecipe *RegisterCraftingRecipe(const char* name) {
 }
 
 void RegisterAllCraftingRecipes() {
-  TraceLog(LOG_INFO, "Registering crafting recipes");
+  TraceLog(LOG_INFO, "===Registering crafting recipes===");
 
   craftingRecipes.fence = RegisterCraftingRecipe("fence");
   craftingRecipes.fence->ingredients[0].object = objects.wood;
@@ -38,5 +38,5 @@ void RegisterAllCraftingRecipes() {
   craftingRecipes.chest->resultAmount = 1;
   craftingRecipes.chest->result = objects.chest;
 
-  TraceLog(LOG_INFO, "Crafting recipes registered");
+  TraceLog(LOG_INFO, "===Crafting recipes registered===");
 }
