@@ -14,5 +14,7 @@ typedef struct {
 } Tile;
 
 void GenerateWorld(Tile* world, Rectangle playerBounds);
+Rectangle GetTileDrawBounds(Tile* tile);
+Rectangle GetTileCollisionBounds(Tile* tile);
 
 #endif

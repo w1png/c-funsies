@@ -15,6 +15,8 @@ typedef enum {
   TAG_INTERACTABLE = 1 << 7,
 } ObjectTags;
 
+typedef int (*ObjectCb) (void* object, void* tile, void* player);
+
 typedef struct {
   int id;
   const char *name;
@@ -25,11 +27,14 @@ typedef struct {
   void* data;
 
   float breakTimeSeconds;
+
+  Rectangle drawBounds;
+  Rectangle collisionBounds;
   
-  int (*onBreak)(void* object, void *data, void *player);
-  int (*onClick)(void* object, void *data, void *player);
-  int (*onPlace)(void* object, void *data, void *player);
-  int (*onStep)(void* object, void *data, void *player);
+  ObjectCb onBreak;
+  ObjectCb onClick;
+  ObjectCb onPlace;
+  ObjectCb onStep;
 } Object;
 
 typedef struct {

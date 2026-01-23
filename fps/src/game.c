@@ -76,68 +76,71 @@ void HandleGameUpdate(GameUpdateData* data, GameUpdateResult* result) {
   data->player->bounds.y += result->deltaY * GetFrameTime() * runingMultiplier;
 
   for (int i = 0; i < MAX_WORLD_SIZE*MAX_WORLD_SIZE; i++) {
-      Tile *tile = &data->world[i];
+    Tile *tile = &data->world[i];
 
-      bool isBreaking = false;
-      bool isColliding = CheckCollisionRecs(data->player->bounds, tile->bounds);
-      if (CheckCollisionPointRec(GetScreenToWorld2D(GetMousePosition(), camera), tile->bounds)) {
-        float distance = Vector2Distance(
-          (Vector2){
-            data->player->bounds.x + data->player->bounds.width / 2.0f,
-            data->player->bounds.y + data->player->bounds.height / 2.0f
-          }, 
-          (Vector2){
-            tile->bounds.x + tile->bounds.width / 2.0f,
-            tile->bounds.y + tile->bounds.height / 2.0f
+    bool isBreaking = false;
+
+    Rectangle tileCollision = GetTileCollisionBounds(tile);
+    bool isColliding = CheckCollisionRecs(data->player->bounds, tileCollision);
+    if (CheckCollisionPointRec(GetScreenToWorld2D(GetMousePosition(), camera), tile->bounds)) {
+      float distance = Vector2Distance(
+        (Vector2){
+          data->player->bounds.x + data->player->bounds.width / 2.0f,
+          data->player->bounds.y + data->player->bounds.height / 2.0f
+        }, 
+        (Vector2){
+          tile->bounds.x + tile->bounds.width / 2.0f,
+          tile->bounds.y + tile->bounds.height / 2.0f
+        }
+      );
+
+      hoveredTile = tile;
+      if (distance <= (INTERACT_DISTANCE * POINT_SIZE)) {
+          if (HAS_TAG(tile->object, TAG_BREAKABLE) && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+            isBreaking = true;
           }
-        );
 
-        hoveredTile = tile;
-        if (distance <= (INTERACT_DISTANCE * POINT_SIZE)) {
-            if (HAS_TAG(tile->object, TAG_BREAKABLE) && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-              isBreaking = true;
-            }
-
-            if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON)) {
-              if (HAS_TAG(tile->object, TAG_EMPTY)) { 
-                InventoryObject *inventoryObject = data->player->inventory[data->player->selectedInventoryObjectIndex];
-                if (
-                  inventoryObject != NULL && HAS_TAG(inventoryObject->object, TAG_PLACEABLE) && 
-                  !CheckCollisionRecs(data->player->bounds, tile->bounds)
-                ) {
-                  if (inventoryObject->object->onPlace != NULL) {
-                    inventoryObject->object->onPlace(inventoryObject->object, tile, data->player);
-                  }
+          bool wasPlaced = false;
+          if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON)) {
+            if (HAS_TAG(tile->object, TAG_EMPTY)) { 
+              InventoryObject *inventoryObject = data->player->inventory[data->player->selectedInventoryObjectIndex];
+              if (
+                inventoryObject != NULL && HAS_TAG(inventoryObject->object, TAG_PLACEABLE) && 
+                !CheckCollisionRecs(data->player->bounds, tile->bounds)
+              ) {
+                if (inventoryObject->object->onPlace != NULL) {
+                  inventoryObject->object->onPlace(inventoryObject->object, tile, data->player);
                 }
               }
             }
+          }
 
-            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
-              if (HAS_TAG(tile->object, TAG_INTERACTABLE)) { 
-                if (tile->object->onClick != NULL) {
-                  tile->object->onClick(tile->object, tile, data->player);
-                }
+          if (!wasPlaced && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+            if (HAS_TAG(tile->object, TAG_INTERACTABLE)) { 
+              if (tile->object->onClick != NULL) {
+                tile->object->onClick(tile->object, tile, data->player);
               }
             }
-        }
-      }
-
-      if (isBreaking) {
-        tile->breakTimeSecondsPassed += GetFrameTime();
-        if (tile->breakTimeSecondsPassed >= tile->object->breakTimeSeconds) {
-          if (tile->object->onBreak != NULL) {
-            tile->object->onBreak(tile->object, tile, data->player);
           }
-          continue;
-        }
-      } else {
-        tile->breakTimeSecondsPassed = 0;
       }
+    }
 
-      if (isColliding && !hasCollidedWall) {
-        hasCollidedWall = HAS_TAG(tile->object, TAG_BLOCKING);
+    if (isBreaking) {
+      tile->breakTimeSecondsPassed += GetFrameTime();
+      if (tile->breakTimeSecondsPassed >= tile->object->breakTimeSeconds) {
+        if (tile->object->onBreak != NULL) {
+          tile->object->onBreak(tile->object, tile, data->player);
+        }
         continue;
       }
+    } else {
+      tile->breakTimeSecondsPassed = 0;
+    }
+
+    if (isColliding && !hasCollidedWall) {
+      hasCollidedWall = HAS_TAG(tile->object, TAG_BLOCKING);
+      continue;
+    }
   }
 
   if (hasCollidedWall) {
@@ -177,32 +180,35 @@ void Draw(DrawData data) {
 
       DrawPlayer(player, (Vector2){gameUpdateResult->deltaX, gameUpdateResult->deltaY});
 
-      for (int i = 0; i < MAX_WORLD_SIZE*MAX_WORLD_SIZE; i++) {
-        Tile tile = world[i];
-        if (HAS_TAG(tile.object, TAG_BACKGROUND)) continue;
-        if (!tile.object->texture) continue;
+      for (int i = 0; i < MAX_WORLD_SIZE * MAX_WORLD_SIZE; i++) {
+          Tile tile = world[i];
+          if (!tile.object) continue;
+          if (HAS_TAG(tile.object, TAG_BACKGROUND)) continue;
+          if (!tile.object->texture) continue;
 
-        Texture2D tex = *tile.object->texture;
+          Texture2D tex = *tile.object->texture;
+          Rectangle drawBounds = GetTileDrawBounds(&tile);
 
-        DrawTexturePro(
-         tex, 
-         (Rectangle){0, 0, (float)tex.width, (float)tex.height}, 
-         (Rectangle){tile.bounds.x, tile.bounds.y, (float)POINT_SIZE, (float)POINT_SIZE}, 
-         (Vector2){0,0}, 
-         0.0f, WHITE
-        );
+          DrawTexturePro(
+              tex,
+              (Rectangle){0, 0, (float)tex.width, (float)tex.height},
+              drawBounds,
+              (Vector2){0, 0},
+              0.0f,
+              WHITE
+          );
       }
 
       if (hoveredTile != NULL) {
         DrawRectangle(hoveredTile->bounds.x, hoveredTile->bounds.y, hoveredTile->bounds.width, hoveredTile->bounds.height, (Color){0,255,0,100});
       }
 
-      DrawText(
-        "particles\nhere",
-        0,0, 16, PINK
-      );
-      ParticleSystem_Update(particleSystem, GetFrameTime());
-      ParticleSystem_Draw(particleSystem);
+      // DrawText(
+      //   "particles\nhere",
+      //   0,0, 16, PINK
+      // );
+      // ParticleSystem_Update(particleSystem, GetFrameTime());
+      // ParticleSystem_Draw(particleSystem);
     EndMode2D();
 
     HandleAllUIUpdates();

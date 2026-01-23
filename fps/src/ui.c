@@ -132,7 +132,7 @@ void HandleDebugMenu(void* screen) {
   UIScreen* us = screen;
   DebugMenuData* data = us->data;
 
-  int totalButtons = 6;
+  int totalButtons = 7;
   float width = 400.0f;
   float height = PADDING*2+BUTTON_HEIGHT*totalButtons+GAP*(totalButtons-1);
   Vector2 position = (Vector2){GetScreenWidth()/2.0f - width/2.0f, GetScreenHeight()/2.0f - height/2.0f};
@@ -143,8 +143,10 @@ void HandleDebugMenu(void* screen) {
   GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s FPS", data->features.showFPS ? "Hide" : "Show"), &data->features.showFPS);
   GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT + GAP, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s hovered tile type", data->features.showHoveredTileType ? "Hide" : "Show"), &data->features.showHoveredTileType);
   GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*2 + GAP*2, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s collisions", data->features.showCollisions ? "Hide" : "Show"), &data->features.showCollisions);
-  GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*3 + GAP*3, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s break time", data->features.showBreakTime ? "Hide" : "Show"), &data->features.showBreakTime);
-  GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*4 + GAP*4, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s ui lock", data->features.showUILock ? "Hide" : "Show"), &data->features.showUILock);
+  GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*3 + GAP*3, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s tile origin", data->features.showTileOrigin ? "Hide" : "Show"), &data->features.showTileOrigin);
+  GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*4 + GAP*4, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s break time", data->features.showBreakTime ? "Hide" : "Show"), &data->features.showBreakTime);
+  GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*5 + GAP*5, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s tile position", data->features.showTilePosition ? "Hide" : "Show"), &data->features.showTilePosition);
+  GuiToggle((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*6 + GAP*6, width - PADDING*2, BUTTON_HEIGHT}, TextFormat("%s ui lock", data->features.showUILock ? "Hide" : "Show"), &data->features.showUILock);
   if (GuiButton((Rectangle){position.x + PADDING, position.y + PADDING + BUTTON_HEIGHT*(totalButtons-1) + GAP*(totalButtons-1), width - PADDING*2, BUTTON_HEIGHT}, "Close")) {
     SetScreenOpen(us, false);
   }
@@ -176,25 +178,58 @@ void HandleDebugInfo(void* screen) {
     Tile tile = data->world[i];
     if (data->features.showCollisions) {
       if (HAS_TAG(tile.object, TAG_BLOCKING)) {
-        Vector2 screenPos = GetWorldToScreen2D(
-          (Vector2){
-            tile.bounds.x,
-            tile.bounds.y,
-          }, 
-          camera
-        );
-
+        Rectangle tileCollision = GetTileCollisionBounds(&tile);
+        Vector2 screenPos = GetWorldToScreen2D((Vector2){
+          tileCollision.x,
+          tileCollision.y,
+        }, camera);
         DrawRectangleLinesEx(
           (Rectangle){
-            screenPos.x,
-            screenPos.y,
-            tile.bounds.width/2,
-            tile.bounds.height/2,
+              screenPos.x,
+              screenPos.y,
+              tileCollision.width / 2,
+              tileCollision.height / 2
           },
-          1,
+          2,
           PINK
         );
+
+        // Vector2 worldTopLeft = {
+        //     tile.bounds.x + tile.object->collisionBounds.x,
+        //     tile.bounds.y + tile.object->collisionBounds.y
+        // };
+        //
+        // Vector2 screenPos = GetWorldToScreen2D(worldTopLeft, camera);
+        //
+        // DrawRectangleLinesEx(
+        //     (Rectangle){
+        //         screenPos.x,
+        //         screenPos.y,
+        //         tile.object->collisionBounds.width * POINT_SIZE,
+        //         tile.object->collisionBounds.height * POINT_SIZE
+        //     },
+        //     2,
+        //     PINK
+        // );      
       }
+    }
+
+    if (!HAS_TAG(tile.object, TAG_EMPTY) && data->features.showTileOrigin) {
+      Vector2 originScreenPos = GetWorldToScreen2D(
+        (Vector2){
+          tile.bounds.x,
+          tile.bounds.y
+        }, 
+        camera
+      );
+  
+      DrawRectangle(
+        originScreenPos.x,
+        originScreenPos.y,
+        POINT_SIZE / 2,
+        POINT_SIZE / 2,
+        (Color){255,0,0,100}
+      );
     }
 
     if (data->features.showBreakTime) {
@@ -215,6 +250,26 @@ void HandleDebugInfo(void* screen) {
         );
       }
     }
+
+    if (data->features.showTilePosition) {
+      if (!HAS_TAG(tile.object, TAG_EMPTY)) {
+        DrawTextEx(
+          GetFontDefault(),
+          TextFormat("x=%.0f y=%0.f", tile.bounds.x, tile.bounds.y),
+          GetWorldToScreen2D(
+            (Vector2){
+              tile.bounds.x + tile.bounds.width / 2.0f - 20,
+              tile.bounds.y + tile.bounds.height / 2.0f
+            }, 
+            camera
+          ),
+          6,
+          1,
+          WHITE
+        );
+      }
+    }
+
   }
 }
 

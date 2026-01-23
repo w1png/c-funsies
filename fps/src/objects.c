@@ -28,9 +28,7 @@ Object *RegisterObject(const char* name, Texture2D *texture) {
   return object;
 }
 
-int OnBreakParticles(void* object, void *data) {
-  Object *obj = (Object*)object;
-  Tile *tile = (Tile*)data;
+int OnBreakParticles(Object* object, Tile* tile) {
   Vector2 pos = {
     tile->bounds.x + tile->bounds.width / 2.0f,
     tile->bounds.y + tile->bounds.height / 2.0f
@@ -43,8 +41,7 @@ int OnBreakParticles(void* object, void *data) {
   return 0;
 }
 
-int OnBreakTree(void* object, void *data, void *player) {
-  Tile *tile = (Tile*)data;
+int OnBreakTree(Object* object, Tile* tile, Player* player) {
   AddToPlayerInventory(objects.wood, GetRandomValue(1, 3), player);
   tile->object = objects.grass;
   // OnBreakParticles(object, data);
@@ -52,10 +49,9 @@ int OnBreakTree(void* object, void *data, void *player) {
   return 0;
 }
 
-int OnBreakGeneric(void* object, void *data, void *player) {
+int OnBreakGeneric(Object* object, Tile* tile, Player* player) {
   Object *obj = (Object*)object;
 
-  Tile *tile = (Tile*)data;
   AddToPlayerInventory(obj, 1, player);
   tile->object = objects.grass;
   tile->data = NULL;
@@ -66,15 +62,15 @@ int OnBreakGeneric(void* object, void *data, void *player) {
 }
 
 
-int OnBreakContainer(void* object, void* data, void *player) {
+int OnBreakContainer(Object* object, Tile* tile, Player* player) {
   // TODO: implement dropping items
-  return OnBreakGeneric(object, data, player);
+  return OnBreakGeneric(object, tile, player);
 }
 
-int OnClickContainer(void* object, void* data, void *player) {
+int OnClickContainer(Object* object, Tile* tile, Player* player) {
   TraceLog(LOG_INFO, "Opening container");
   ContainerMenuData *d = malloc(sizeof(ContainerMenuData));
-  d->tile = (Tile*)data;
+  d->tile = tile;
   d->player = (Player*)player;
   uiScreens.containerMenu->data = d;
   SetScreenOpen(uiScreens.containerMenu, true);
@@ -82,12 +78,8 @@ int OnClickContainer(void* object, void* data, void *player) {
   return 0;
 }
 
-int OnPlaceGeneric(void* object, void* data, void *player) {
-  Object *obj = (Object*)object;
-  Tile* tile = (Tile*)data;
-  Player* pl = (Player*)player;
-
-  InventoryObject *inventoryObject = pl->inventory[pl->selectedInventoryObjectIndex];
+int OnPlaceGeneric(Object* object, Tile* tile, Player* player) {
+  InventoryObject *inventoryObject = player->inventory[player->selectedInventoryObjectIndex];
   if (inventoryObject == NULL) {
     return -1;
   };
@@ -99,51 +91,71 @@ int OnPlaceGeneric(void* object, void* data, void *player) {
   return 0;
 }
 
-int OnPlaceContainer(void* object, void* data, void *player) {
-  Tile* tile = (Tile*)data;
-
+int OnPlaceContainer(Object* object, Tile* tile, Player* player) {
   tile->data = malloc(sizeof(ContainerObject)*CHEST_SIZE);
 
-  return OnPlaceGeneric(object, data, player);
+  return OnPlaceGeneric(object, tile, player);
 }
 
 void RegisterAllObjects() {
+  Rectangle singleTileBounds = {.x = 0, .y = 0, .width = 1, .height = 1};
+
   TraceLog(LOG_INFO, "===Registering objects===");
   objects.tree = RegisterObject("tree", &textures.tree);
   objects.tree->tags = TAG_BLOCKING | TAG_BREAKABLE;
   objects.tree->breakTimeSeconds = 1;
-  objects.tree->onBreak = OnBreakTree;
+  objects.tree->onBreak = (ObjectCb)OnBreakTree;
+  objects.tree->drawBounds = (Rectangle){
+    .x = -1,
+    .y = -2,
+    .width = 3,
+    .height = 3,
+  };
+  objects.tree->collisionBounds = (Rectangle){
+    .x = -0.5,
+    .y = 0,
+    .width = 2,
+    .height = 1,
+  };
 
   objects.wood = RegisterObject("wood", &textures.wood);
   objects.wood->tags = TAG_BLOCKING | TAG_BREAKABLE | TAG_PLACEABLE;
   objects.wood->breakTimeSeconds = 0.5;
-  objects.wood->onBreak = OnBreakGeneric;
-  objects.wood->onPlace = OnPlaceGeneric;
+  objects.wood->onBreak = (ObjectCb)OnBreakGeneric;
+  objects.wood->onPlace = (ObjectCb)OnPlaceGeneric;
+  objects.wood->drawBounds = singleTileBounds;
+  objects.wood->collisionBounds = singleTileBounds;
 
   objects.stone = RegisterObject("stone", &textures.stone);
   objects.stone->tags = TAG_BLOCKING | TAG_PLACEABLE | TAG_BREAKABLE;
   objects.stone->breakTimeSeconds = 2;
-  objects.stone->onBreak = OnBreakGeneric;
-  objects.stone->onPlace = OnPlaceGeneric;
+  objects.stone->onBreak = (ObjectCb)OnBreakGeneric;
+  objects.stone->onPlace = (ObjectCb)OnPlaceGeneric;
+  objects.stone->drawBounds = singleTileBounds;
+  objects.stone->collisionBounds = singleTileBounds;
 
   objects.grass = RegisterObject("grass", &textures.grass);
   objects.grass->tags = TAG_EMPTY | TAG_BACKGROUND;
+  objects.grass->drawBounds = singleTileBounds;
 
   objects.water = RegisterObject("water", &textures.water);
   objects.water->tags = TAG_BLOCKING | TAG_FISHING_SPOT | TAG_BACKGROUND;
+  objects.water->drawBounds = singleTileBounds;
 
   objects.fence = RegisterObject("fence", &textures.placeholder);
   objects.fence->tags = TAG_BLOCKING | TAG_BREAKABLE | TAG_PLACEABLE;
   objects.fence->breakTimeSeconds = 0.5;
-  objects.fence->onBreak = OnBreakGeneric;
-  objects.fence->onPlace = OnPlaceGeneric;
+  objects.fence->onBreak = (ObjectCb)OnBreakGeneric;
+  objects.fence->onPlace = (ObjectCb)OnPlaceGeneric;
+  objects.fence->drawBounds = singleTileBounds;
 
   objects.chest = RegisterObject("chest", &textures.chest);
   objects.chest->tags = TAG_BLOCKING | TAG_BREAKABLE | TAG_PLACEABLE | TAG_CONTAINER | TAG_INTERACTABLE;
   objects.chest->breakTimeSeconds = 0.5;
-  objects.chest->onBreak = OnBreakContainer;
-  objects.chest->onClick = OnClickContainer;
-  objects.chest->onPlace = OnPlaceContainer;
+  objects.chest->onBreak = (ObjectCb)OnBreakContainer;
+  objects.chest->onClick = (ObjectCb)OnClickContainer;
+  objects.chest->onPlace = (ObjectCb)OnPlaceContainer;
+  objects.chest->drawBounds = singleTileBounds;
 
   TraceLog(LOG_INFO, "===Objects registered===");
 }

@@ -7,7 +7,7 @@ CraftingRecipes craftingRecipes;
 CraftingRecipe craftingRecipesArr[MAX_CRAFTING_RECIPES];
 int craftingRecipesCount = 0;
 
-CraftingRecipe *RegisterCraftingRecipe(const char* name) {
+static CraftingRecipe *RegisterCraftingRecipe(const char* name) {
   if (craftingRecipesCount >= MAX_CRAFTING_RECIPES) {
     TraceLog(LOG_ERROR, "Too many crafting recipes registered");
     exit(1);

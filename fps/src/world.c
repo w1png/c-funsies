@@ -80,3 +80,39 @@ void GenerateWorld(Tile* world, Rectangle playerBounds) {
 
   TraceLog(LOG_INFO, "World generated");
 }
+
+Rectangle GetTileDrawBounds(Tile* tile) {
+ // Texture2D tex = *tile.object->texture;
+ //          Rectangle drawRect = tile.object->drawBounds;
+ //
+ //          float pixelX = tile.bounds.x + drawRect.x * POINT_SIZE;
+ //          float pixelY = tile.bounds.y + drawRect.y * POINT_SIZE;
+ //          float pixelWidth  = drawRect.width  * POINT_SIZE;
+ //          float pixelHeight = drawRect.height * POINT_SIZE;
+ //
+ //          DrawTexturePro(
+ //              tex,
+ //              (Rectangle){0, 0, (float)tex.width, (float)tex.height},
+ //              (Rectangle){pixelX, pixelY, pixelWidth, pixelHeight},
+ //              (Vector2){0, 0},
+ //              0.0f,
+ //              WHITE
+ //          );
+
+  return (Rectangle) {
+    .x = tile->bounds.x + tile->object->drawBounds.x * POINT_SIZE,
+    .y =  tile->bounds.y + tile->object->drawBounds.y * POINT_SIZE,
+    .width = tile->object->drawBounds.width * POINT_SIZE,
+    .height = tile->object->drawBounds.height * POINT_SIZE
+  };
+}
+
+Rectangle GetTileCollisionBounds(Tile *tile) {
+  Rectangle collisionBounds = tile->object->collisionBounds;
+  return (Rectangle){
+    .x = tile->bounds.x + (collisionBounds.x * POINT_SIZE),
+    .y = tile->bounds.y + (collisionBounds.y * POINT_SIZE),
+    .width = (collisionBounds.width*POINT_SIZE),
+    .height = (collisionBounds.height*POINT_SIZE)
+  };
+}

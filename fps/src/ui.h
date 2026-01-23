@@ -39,7 +39,9 @@ typedef struct {
     bool showFPS;
     bool showHoveredTileType;
     bool showCollisions;
+    bool showTileOrigin;
     bool showBreakTime;
+    bool showTilePosition;
     bool showUILock;
   } features;
 } DebugMenuData;
