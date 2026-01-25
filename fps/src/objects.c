@@ -63,6 +63,9 @@ int OnBreakGeneric(Object* object, Tile* tile, Player* player) {
 
 
 int OnBreakContainer(Object* object, Tile* tile, Player* player) {
+  if (tile->data != NULL) {
+    free(tile->data);
+  }
   // TODO: implement dropping items
   return OnBreakGeneric(object, tile, player);
 }

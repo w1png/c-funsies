@@ -52,7 +52,7 @@ void HandleGameUpdate(GameUpdateData* data) {
         wasPlaced = HandlePlaceTile(data->player, tile);
       }
 
-      if (!wasPlaced && IsMouseButtonDown(MOUSE_LEFT_BUTTON) && CanInteractTile(data->player, tile)) {
+      if (!wasPlaced && IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && CanInteractTile(data->player, tile)) {
         tile->object->onClick(tile->object, tile, data->player);
       }
     }
