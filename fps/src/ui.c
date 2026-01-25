@@ -164,18 +164,17 @@ void HandleDebugInfo(void* screen) {
       DrawText(fpsText, PADDING, GetScreenHeight()-PADDING-fontSize, fontSize, PINK);
   }
 
-  if (data->features.showHoveredTileType) {
-    if (*data->hoveredTile != NULL) {
-      DrawText(TextFormat("Hovered tile type: %s", (*data->hoveredTile)->object->name), PADDING, GetScreenHeight()-PADDING-GAP*2-fontSize, fontSize, PINK);
-    }
-  }
-
   if (data->features.showUILock) {
     DrawText(TextFormat("UI Lock: %s", UI_LOCK != NULL ? UI_LOCK->name : "None"), PADDING, GetScreenHeight()-PADDING-GAP*3-fontSize, fontSize, PINK);
   }
 
   for (int i = 0; i < MAX_WORLD_SIZE*MAX_WORLD_SIZE; i++) {
     Tile tile = data->world[i];
+
+    if (tile.isHovered && data->features.showHoveredTileType) {
+      DrawText(TextFormat("Hovered tile type: %s", tile.object->name), PADDING, GetScreenHeight()-PADDING-GAP*2-fontSize, fontSize, PINK);
+    }
+
     if (data->features.showCollisions) {
       if (HAS_TAG(tile.object, TAG_BLOCKING)) {
         Rectangle tileCollision = GetTileCollisionBounds(&tile);
@@ -193,24 +192,6 @@ void HandleDebugInfo(void* screen) {
           2,
           PINK
         );
-
-        // Vector2 worldTopLeft = {
-        //     tile.bounds.x + tile.object->collisionBounds.x,
-        //     tile.bounds.y + tile.object->collisionBounds.y
-        // };
-        //
-        // Vector2 screenPos = GetWorldToScreen2D(worldTopLeft, camera);
-        //
-        // DrawRectangleLinesEx(
-        //     (Rectangle){
-        //         screenPos.x,
-        //         screenPos.y,
-        //         tile.object->collisionBounds.width * POINT_SIZE,
-        //         tile.object->collisionBounds.height * POINT_SIZE
-        //     },
-        //     2,
-        //     PINK
-        // );      
       }
     }
 
@@ -305,10 +286,6 @@ void HandleInventoryMenu(void* screen) {
       );
       DrawText(TextFormat("%i", object->amount), posX+PADDING/4, posY, 24, WHITE);
     }
-
-    // if (i == player->selectedInventoryObjectIndex) {
-    //   DrawRectangle(posX, posY, BUTTON_HEIGHT, BUTTON_HEIGHT, (Color){0,255,0,100});
-    // }
   }
 
   for (int i = 0; i < craftingRecipesCount; i++) {
@@ -476,7 +453,7 @@ void RegisterAllUIScreens() {
   uiScreens.inventoryHUD->handle = HandlePlayerInventoryHUD;
   uiScreens.inventoryHUD->data = &playerInventoryData;
 
-  DebugMenuData debugMenuData = { .world = NULL, .player = NULL, .hoveredTile = NULL };
+  DebugMenuData debugMenuData = { .world = NULL, .player = NULL };
   uiScreens.debugHUD = RegisterUIScreen("Debug Info");
   uiScreens.debugHUD->handle = HandleDebugInfo;
   uiScreens.debugHUD->data = &debugMenuData;

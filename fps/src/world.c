@@ -1,6 +1,7 @@
 #include "const.h"
 #include "objects.h"
 #include "raylib.h"
+#include "texture.h"
 #include <stdlib.h>
 #include "world.h"
 
@@ -81,24 +82,50 @@ void GenerateWorld(Tile* world, Rectangle playerBounds) {
   TraceLog(LOG_INFO, "World generated");
 }
 
-Rectangle GetTileDrawBounds(Tile* tile) {
- // Texture2D tex = *tile.object->texture;
- //          Rectangle drawRect = tile.object->drawBounds;
- //
- //          float pixelX = tile.bounds.x + drawRect.x * POINT_SIZE;
- //          float pixelY = tile.bounds.y + drawRect.y * POINT_SIZE;
- //          float pixelWidth  = drawRect.width  * POINT_SIZE;
- //          float pixelHeight = drawRect.height * POINT_SIZE;
- //
- //          DrawTexturePro(
- //              tex,
- //              (Rectangle){0, 0, (float)tex.width, (float)tex.height},
- //              (Rectangle){pixelX, pixelY, pixelWidth, pixelHeight},
- //              (Vector2){0, 0},
- //              0.0f,
- //              WHITE
- //          );
+typedef struct {
+  Texture2D* texture;
+  Color* color;
+  Rectangle* drawBounds;
+} DrawTileOverrides;
 
+#define DrawTile(tile, ...) DrawTileImpl(tile, (DrawTileOverrides){__VA_ARGS__})
+
+void DrawTileImpl(Tile* tile, const DrawTileOverrides overrides) {
+  Texture2D texture = overrides.texture == NULL ? *tile->object->texture : *overrides.texture;
+  Rectangle drawBounds = GetTileDrawBounds(tile);
+
+  DrawTexturePro(
+    texture,
+    (Rectangle){0, 0, (float)texture.width, (float)texture.height},
+    overrides.drawBounds == NULL ? drawBounds : *overrides.drawBounds,
+    (Vector2){0, 0},
+    0.0f,
+    overrides.color == NULL ? WHITE : *overrides.color
+  );
+
+  if (tile->isHovered) {
+    DrawRectangle(drawBounds.x, drawBounds.y, drawBounds.width, drawBounds.height, (Color){0,255,0,100});
+  }
+}
+
+void DrawWorldBackground(Tile* world) {
+  for (int i = 0; i < MAX_WORLD_SIZE*MAX_WORLD_SIZE; i++) {
+    Tile tile = world[i];
+    Texture2D overrideTexture = HAS_TAG(tile.object, TAG_BACKGROUND) ? *tile.object->texture : textures.grass;
+    DrawTile(&tile, .texture = &overrideTexture, .drawBounds = (&tile.bounds));
+  }
+}
+void DrawWorldForeground(Tile* world) {
+  for (int i = 0; i < MAX_WORLD_SIZE * MAX_WORLD_SIZE; i++) {
+    Tile tile = world[i];
+    if (HAS_TAG(tile.object, TAG_BACKGROUND)) continue;
+    
+    DrawTile(&tile);
+  }
+}
+
+
+Rectangle GetTileDrawBounds(Tile* tile) {
   return (Rectangle) {
     .x = tile->bounds.x + tile->object->drawBounds.x * POINT_SIZE,
     .y =  tile->bounds.y + tile->object->drawBounds.y * POINT_SIZE,

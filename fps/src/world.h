@@ -11,10 +11,14 @@ typedef struct {
 
   float breakTimeSecondsPassed;
   void* data;
+  bool isHovered;
 } Tile;
 
 void GenerateWorld(Tile* world, Rectangle playerBounds);
 Rectangle GetTileDrawBounds(Tile* tile);
 Rectangle GetTileCollisionBounds(Tile* tile);
+
+void DrawWorldBackground(Tile* world);
+void DrawWorldForeground(Tile* world);
 
 #endif

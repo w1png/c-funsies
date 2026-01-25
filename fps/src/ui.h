@@ -33,7 +33,6 @@ typedef struct {
 typedef struct {
   Tile* world;
   Player* player;
-  Tile** hoveredTile;
 
   struct {
     bool showFPS;
